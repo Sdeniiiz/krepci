@@ -2,7 +2,7 @@ import React from 'react';
 import { BRAND_INFO } from '../data/menuData';
 import { Phone, MapPin, Clock, Heart, ShieldCheck, MessageCircle } from 'lucide-react';
 
-export default function Footer({ onOpenMenu, onStartPlan, onOpenPoster }) {
+export default function Footer({ onOpenMenu, onStartPlan, onOpenPoster, onOpenAdmin }) {
   return (
     <footer className="bg-[#072316] text-white pt-16 pb-12 border-t-4 border-[#e2991e]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -60,6 +60,11 @@ export default function Footer({ onOpenMenu, onStartPlan, onOpenPoster }) {
                 <a href="#how-it-works" className="hover:text-amber-300 transition-colors">
                   • Günlük Kapıda Ödeme Seçenekleri
                 </a>
+              </li>
+              <li>
+                <button onClick={onOpenAdmin} className="text-amber-300 hover:text-white font-bold transition-colors">
+                  • ⚙️ Mutfak & Sevkiyat Yönetim Paneli
+                </button>
               </li>
             </ul>
           </div>

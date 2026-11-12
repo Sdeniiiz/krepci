@@ -39,6 +39,14 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAuth, onToggleMo
               <Smartphone size={13} className="text-[#e2991e]" />
               <span>Mobil Görünüm</span>
             </button>
+            <span className="hidden sm:inline text-white/30">•</span>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className="flex items-center gap-1.5 text-amber-300 hover:text-white font-bold transition-colors cursor-pointer"
+              title="Mutfak & Sevkiyat Yönetim Paneli"
+            >
+              <span>⚙️ Yönetim Paneli</span>
+            </button>
           </div>
         </div>
       </div>
@@ -168,12 +176,12 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAuth, onToggleMo
               </button>
               <button
                 onClick={() => {
-                  setActiveTab('subscribe');
+                  setActiveTab('admin');
                   setMobileMenuOpen(false);
                 }}
                 className="font-bold text-amber-900 underline"
               >
-                Yemek Programı Başlat →
+                ⚙️ Yönetim Paneli
               </button>
             </div>
           </div>

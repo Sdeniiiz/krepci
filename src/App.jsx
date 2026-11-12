@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import WeeklyMenu from './components/WeeklyMenu';
@@ -10,16 +10,24 @@ import Footer from './components/Footer';
 import PosterModal from './components/PosterModal';
 import AuthModal from './components/AuthModal';
 import MobileSimulator from './components/MobileSimulator';
+import AdminDashboard from './components/AdminDashboard';
 import { BRAND_INFO, PRICING_TIERS } from './data/menuData';
 import { Phone, MessageCircle, Smartphone } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'subscribe' | 'pricing' | 'how-it-works' | 'specialties' | 'dashboard'
+  const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'subscribe' | 'pricing' | 'how-it-works' | 'specialties' | 'dashboard' | 'admin'
   const [isPosterOpen, setIsPosterOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMobileSimulatorOpen, setIsMobileSimulatorOpen] = useState(false);
   const [activeSubscription, setActiveSubscription] = useState(null);
   const [user, setUser] = useState(null);
+
+  // URL Hash kontrolü (#admin ile doğrudan açabilme)
+  useEffect(() => {
+    if (window.location.hash === '#admin') {
+      setActiveTab('admin');
+    }
+  }, []);
 
   // Abonelik Tamamlandığında
   const handleCompleteSubscription = (subscriptionData) => {
@@ -45,6 +53,11 @@ export default function App() {
   const handleSelectTierFromPricing = (tier) => {
     setActiveTab('subscribe');
   };
+
+  // Eğer Yönetici Modundaysa
+  if (activeTab === 'admin') {
+    return <AdminDashboard onExitAdmin={() => setActiveTab('menu')} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-stone-800 bg-[#faf7f2]">
@@ -109,10 +122,19 @@ export default function App() {
 
       {/* Sabit Hızlı Sipariş ve WhatsApp Butonları (Floating Bar) */}
       <div className="fixed bottom-5 right-5 z-40 flex flex-col gap-2.5 items-end">
+        {/* Yönetim Paneli Hızlı Geçiş Butonu */}
+        <button
+          onClick={() => setActiveTab('admin')}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-stone-900/90 hover:bg-stone-900 text-[#e2991e] font-bold text-xs shadow-lg border border-[#e2991e]/30 transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
+          title="Mutfak & Dağıtım Yönetim Paneli"
+        >
+          <span>⚙️ Yönetim Paneli</span>
+        </button>
+
         {/* Mobil Uygulama Canlı Deneyim Butonu */}
         <button
           onClick={() => setIsMobileSimulatorOpen(true)}
-          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-[#0e3d29] hover:bg-[#185a3e] text-[#e2991e] font-bold text-xs shadow-xl border border-[#e2991e]/50 transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-[#0e3d29] hover:bg-[#185a3e] text-[#e2991e] font-bold text-xs shadow-xl border border-[#e2991e]/50 transition-all hover:scale-105 active:scale-95 cursor-pointer"
           title="Mobil Uygulama Simülasyonunu Aç"
         >
           <Smartphone size={17} />
@@ -149,7 +171,6 @@ export default function App() {
       <MobileSimulator
         isOpen={isMobileSimulatorOpen}
         onClose={() => setIsMobileSimulatorOpen(false)}
-        onLaunchPlan={() => setActiveTab('subscribe')}
       />
 
       {/* Alt Bilgi */}
@@ -157,6 +178,7 @@ export default function App() {
         onOpenMenu={() => setActiveTab('menu')}
         onStartPlan={() => setActiveTab('subscribe')}
         onOpenPoster={() => setIsPosterOpen(true)}
+        onOpenAdmin={() => setActiveTab('admin')}
       />
     </div>
   );
