@@ -11,6 +11,7 @@ import PosterModal from './components/PosterModal';
 import AuthModal from './components/AuthModal';
 import MobileSimulator from './components/MobileSimulator';
 import AdminDashboard from './components/AdminDashboard';
+import OpeningPosterSplash from './components/OpeningPosterSplash';
 import { BRAND_INFO, PRICING_TIERS } from './data/menuData';
 import { Phone, MessageCircle, Smartphone } from 'lucide-react';
 
@@ -154,6 +155,10 @@ export default function App() {
       </div>
 
       {/* Modallar */}
+      <OpeningPosterSplash
+        onInspectPoster={() => setIsPosterOpen(true)}
+      />
+
       <PosterModal
         isOpen={isPosterOpen}
         onClose={() => setIsPosterOpen(false)}
