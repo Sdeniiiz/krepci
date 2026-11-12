@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-krepci-green: #0e3d29;
+    --color-krepci-green-light: #185a3e;
+    --color-krepci-green-dark: #072316;
+    --color-krepci-gold: #e2991e;
+    --color-krepci-gold-light: #f5b041;
+    --color-krepci-gold-dark: #b7791f;
+    --color-krepci-cream: #faf7f0;
+    --color-krepci-card: #ffffff;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #fbf9f4;
+  color: #1a202c;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1ede4;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9bea9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0e3d29;
+}
