@@ -10,11 +10,11 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function SubscriptionPlanner({ onCompleteSubscription }) {
+export default function SubscriptionPlanner({ onCompleteSubscription, initialDayKey = 'pazartesi', initialDuration = 'daily' }) {
   const [step, setStep] = useState(1); // 1: Porsiyon, 2: Süre & Ödeme, 3: Damak & Kara Liste, 4: Menü İnceleme, 5: Teslimat
   const [selectedTier, setSelectedTier] = useState(PRICING_TIERS[2]); // 3 Çeşit
-  const [duration, setDuration] = useState('monthly'); // 'monthly' | 'weekly' | 'daily'
-  const [paymentMethod, setPaymentMethod] = useState('online-card'); // 'online-card' | 'cod-daily'
+  const [duration, setDuration] = useState(initialDuration || 'daily'); // 'daily' | 'weekly' | 'monthly'
+  const [paymentMethod, setPaymentMethod] = useState('cod-daily'); // 'cod-daily' | 'online-card'
   
   // Damak Zevki ve İstemediğim Yiyecekler (Aylık abonelik konforu)
   const [selectedProfile, setSelectedProfile] = useState('dengeli');
@@ -33,7 +33,6 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
   const toggleDisliked = (id) => {
     setDislikedList(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      // Otomatik yeni plan oluştur
       const newPlan = generatePersonalizedPlan(selectedProfile, next);
       setUserSchedule(newPlan);
       return next;
@@ -49,7 +48,16 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
 
   // Kullanıcının kişisel yemek programı (başlangıçta akıllı motor ile üretilir)
   const [userSchedule, setUserSchedule] = useState(() => generatePersonalizedPlan('dengeli', []));
-  const [activeDayKey, setActiveDayKey] = useState('pazartesi');
+  const [activeDayKey, setActiveDayKey] = useState(initialDayKey || 'pazartesi');
+
+  // Prop güncellendiğinde senkronize et
+  React.useEffect(() => {
+    if (initialDayKey) setActiveDayKey(initialDayKey);
+  }, [initialDayKey]);
+
+  React.useEffect(() => {
+    if (initialDuration) setDuration(initialDuration);
+  }, [initialDuration]);
 
   // Fiyat Hesaplama
   const dailyBase = selectedTier.dailyPrice;

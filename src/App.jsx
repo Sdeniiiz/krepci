@@ -34,11 +34,15 @@ export default function App() {
 
   const [menuWeekRange, setMenuWeekRange] = useState(() => {
     try {
-      const saved = localStorage.getItem('krepci_menu_week_range');
-      if (saved) return saved;
-    } catch (e) {}
-    return '09 - 14 Kasım 2026';
+      return localStorage.getItem('krepci_menu_week_range') || '09 - 14 Kasım 2026';
+    } catch (e) {
+      return '09 - 14 Kasım 2026';
+    }
   });
+
+  // Seçilen Başlangıç Günü ve Süresi
+  const [plannerInitialDay, setPlannerInitialDay] = useState('pazartesi');
+  const [plannerInitialDuration, setPlannerInitialDuration] = useState('daily');
 
   const handleMenuUpdated = (newMenu, newRange) => {
     setWeeklyMenu(newMenu);
@@ -68,17 +72,37 @@ export default function App() {
 
   // Hızlı Gün Siparişi
   const handleQuickOrderDay = (day) => {
-    setActiveTab('subscribe');
+    setPlannerInitialDay(day.id);
+    setPlannerInitialDuration('daily');
+    const el = document.getElementById('subscription-planner');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setActiveTab('subscribe');
+    }
   };
 
   // Menüden Güne Göre Planlama
   const handleSelectDayForPlan = (day) => {
-    setActiveTab('subscribe');
+    setPlannerInitialDay(day.id);
+    setPlannerInitialDuration('daily');
+    const el = document.getElementById('subscription-planner');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setActiveTab('subscribe');
+    }
   };
 
   // Fiyat kartından paket seçildiğinde
   const handleSelectTierFromPricing = (tier) => {
-    setActiveTab('subscribe');
+    setPlannerInitialDuration('monthly');
+    const el = document.getElementById('subscription-planner');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setActiveTab('subscribe');
+    }
   };
 
   // Eğer Yönetici Modundaysa
@@ -111,7 +135,11 @@ export default function App() {
         {activeTab === 'menu' && (
           <>
             <Hero
-              onStartPlan={() => setActiveTab('subscribe')}
+              onStartPlan={() => {
+                const el = document.getElementById('subscription-planner');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                else setActiveTab('subscribe');
+              }}
               onOpenMenu={() => {
                 const el = document.getElementById('weekly-menu');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -124,7 +152,19 @@ export default function App() {
               onSelectDayForPlan={handleSelectDayForPlan}
               onQuickOrderDay={handleQuickOrderDay}
             />
-            <HowItWorks onStartPlan={() => setActiveTab('subscribe')} />
+            
+            {/* ANASAYFADA DAİMA GÖRÜNÜR YEMEK PROGRAMI VE SİPARİŞ SİHİRBAZI */}
+            <SubscriptionPlanner
+              onCompleteSubscription={handleCompleteSubscription}
+              initialDayKey={plannerInitialDay}
+              initialDuration={plannerInitialDuration}
+            />
+
+            <HowItWorks onStartPlan={() => {
+              const el = document.getElementById('subscription-planner');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              else setActiveTab('subscribe');
+            }} />
             <PricingSection onSelectTier={handleSelectTierFromPricing} />
           </>
         )}
@@ -132,6 +172,8 @@ export default function App() {
         {activeTab === 'subscribe' && (
           <SubscriptionPlanner
             onCompleteSubscription={handleCompleteSubscription}
+            initialDayKey={plannerInitialDay}
+            initialDuration={plannerInitialDuration}
           />
         )}
 
