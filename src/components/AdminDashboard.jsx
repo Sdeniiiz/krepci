@@ -3,13 +3,15 @@ import {
   Users, ShoppingBag, Clock, MapPin, Phone, 
   Calendar, CheckCircle2, AlertCircle, Plus, Search, 
   Filter, ChefHat, Truck, CreditCard, Banknote, 
-  ChevronRight, ArrowUpRight, MessageCircle, RefreshCw, X, Edit, Eye
+  ChevronRight, ArrowUpRight, MessageCircle, RefreshCw, X, Edit, Eye,
+  FileText, Upload, Sparkles, FileUp, Check, ArrowRight, Ban
 } from 'lucide-react';
 import { INITIAL_ORDERS, INITIAL_CUSTOMERS } from '../data/adminMockData';
 import { BRAND_INFO, DAYS_MENU } from '../data/menuData';
+import confetti from 'canvas-confetti';
 
-export default function AdminDashboard({ onExitAdmin }) {
-  const [activeTab, setActiveTab] = useState('deliveries'); // 'deliveries' | 'kitchen' | 'customers' | 'sales'
+export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeeklyMenu }) {
+  const [activeTab, setActiveTab] = useState('deliveries'); // 'deliveries' | 'kitchen' | 'customers' | 'sales' | 'menu-updater'
   const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
   
@@ -17,6 +19,16 @@ export default function AdminDashboard({ onExitAdmin }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState('all'); // 'all' | '11:30 - 13:00' | '17:30 - 19:30'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'hazirlaniyor' | 'kuryede' | 'teslim_edildi'
+
+  // ================= HAFTALIK MENÜ YÜKLEYİCİ & DÜZENLEYİCİ STATE =================
+  const [draftMenu, setDraftMenu] = useState(() => {
+    return JSON.parse(JSON.stringify(currentWeeklyMenu || DAYS_MENU));
+  });
+  const [weekRange, setWeekRange] = useState('16 - 21 Kasım 2026');
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [rawText, setRawText] = useState('');
+  const [publishSuccess, setPublishSuccess] = useState(false);
 
   // Yeni Sipariş Modalı
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -98,6 +110,124 @@ export default function AdminDashboard({ onExitAdmin }) {
     });
   };
 
+  // ================= DOSYA (PDF / GÖRSEL) YÜKLEME VE AYRIŞTIRMA =================
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadedFile(file);
+    setIsAnalyzing(true);
+    setPublishSuccess(false);
+
+    // Akıllı OCR ve Menü Çıkarıcı Simülasyonu
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      // Dosyadan çıkarılan örnek gelecek haftanın menüsü
+      setDraftMenu(prev => [
+        {
+          ...prev[0],
+          date: "16.11.2026",
+          corbalar: ["Süzme Mercimek Çorbası", "Tarhana Çorbası"],
+          anaYemekler: ["Krepçi Yağlama", "Etli Hünkar Beğendi", "Fırında Sebzeli Tavuk", "Zeytinyağlı Taze Fasulye"],
+          pilavMakarna: ["Tereyağlı Pirinç Pilavı", "Domatesli Bulgur"],
+          salataMeze: ["Mevsim Salata", "Havuç Tarator", "Cacık"]
+        },
+        {
+          ...prev[1],
+          date: "17.11.2026",
+          corbalar: ["Kremalı Domates Çorbası", "Yayla Çorbası"],
+          anaYemekler: ["Etli Kuru Fasulye", "Tavuklu Bezelye", "Arnavut Ciğeri", "Fırın Tavuk Şiş"],
+          pilavMakarna: ["Pirinç Pilavı", "Fırın Makarna"],
+          salataMeze: ["Yoğurtlu Semizotu", "Kısır", "Cacık"]
+        },
+        {
+          ...prev[2],
+          date: "18.11.2026",
+          corbalar: ["Ezogelin Çorbası", "Şehriye Çorbası"],
+          anaYemekler: ["Kayseri Mantısı", "Etli Nohut Yemeği", "Patates Püreli Tavuk Sote"],
+          pilavMakarna: ["Pirinç Pilavı", "Pesto Soslu Makarna"],
+          salataMeze: ["Köz Patlıcan Yoğurtlusu", "Pancar Salatası"]
+        },
+        {
+          ...prev[3],
+          date: "19.11.2026",
+          corbalar: ["Brokoli Çorbası", "Yayla Çorbası"],
+          anaYemekler: ["Etli Keşkek", "Kıymalı Karnıyarık", "Fırında Sebzeli Baget"],
+          pilavMakarna: ["Bulgur Pilavı", "Kelebek Makarna"],
+          salataMeze: ["Mor Lahana Yoğurtlusu", "Mevsim Salata"]
+        },
+        {
+          ...prev[4],
+          date: "20.11.2026",
+          corbalar: ["Mantar Çorbası", "Mercimek Çorbası"],
+          anaYemekler: ["Etli Tepsi Kebabı", "Çıtır Tavuk Şiş", "Tavuklu Bamya Yemeği"],
+          pilavMakarna: ["Pirinç Pilavı", "Ankara Tava"],
+          salataMeze: ["Mercimek Köftesi", "Yoğurtlu Havuç"]
+        },
+        {
+          ...prev[5],
+          date: "21.11.2026",
+          corbalar: ["Mantar Çorbası", "Ezogelin Çorbası"],
+          anaYemekler: ["Kıymalı Krep", "Tavuklu Krep", "Fırında Orman Kebabı"],
+          pilavMakarna: ["Pirinç Pilavı", "Domatesli Makarna"],
+          salataMeze: ["Karışık Turşu Kavurması", "Cacık"]
+        }
+      ]);
+    }, 1200);
+  };
+
+  // Metin / WhatsApp Yapıştırma Ayrıştırıcısı
+  const handleParseRawText = () => {
+    if (!rawText.trim()) return;
+    setIsAnalyzing(true);
+
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      // Metin içinden basit yemek ayıklama
+      const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+      // İlk 6 ana yemeği günlere serpiştir
+      const newDraft = draftMenu.map((day, idx) => {
+        return {
+          ...day,
+          anaYemekler: lines.length > idx ? [lines[idx], ...day.anaYemekler.slice(1)] : day.anaYemekler
+        };
+      });
+      setDraftMenu(newDraft);
+    }, 800);
+  };
+
+  // Taslaktaki yemeği el ile hızlı düzenleme
+  const handleEditDraftItem = (dayIndex, category, textValue) => {
+    const items = textValue.split(',').map(s => s.trim()).filter(Boolean);
+    setDraftMenu(prev => {
+      const next = [...prev];
+      next[dayIndex] = {
+        ...next[dayIndex],
+        [category]: items
+      };
+      return next;
+    });
+  };
+
+  // Menüyü Canlıya Yayınlama
+  const handlePublishMenu = () => {
+    try {
+      confetti({ particleCount: 90, spread: 60, origin: { y: 0.6 } });
+    } catch (e) {}
+
+    // LocalStorage ve parent component güncellemesi
+    if (typeof onMenuUpdated === 'function') {
+      onMenuUpdated(draftMenu, weekRange);
+    }
+    try {
+      localStorage.setItem('krepci_custom_weekly_menu', JSON.stringify(draftMenu));
+      localStorage.setItem('krepci_menu_week_range', weekRange);
+    } catch (e) {}
+
+    setPublishSuccess(true);
+    setTimeout(() => setPublishSuccess(false), 5000);
+  };
+
   // Filtrelenmiş Siparişler
   const filteredOrders = orders.filter(o => {
     const matchSearch = o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -109,7 +239,7 @@ export default function AdminDashboard({ onExitAdmin }) {
     return matchSearch && matchTime && matchStatus;
   });
 
-  // Mutfak Aşçı Porsiyon Sayacı (Chef Production Calculator)
+  // Mutfak Aşçı Porsiyon Sayacı
   const kitchenBatch = orders.reduce((acc, order) => {
     if (order.status !== 'iptal') {
       const { corba, anaYemek, pilav, salata } = order.todayMeal;
@@ -151,7 +281,7 @@ export default function AdminDashboard({ onExitAdmin }) {
                   </span>
                 </div>
                 <span className="text-[11px] text-stone-300 block">
-                  Kime, Ne Zaman, Hangi Yemek Gönderilecek? (Sevkiyat Planlayıcı)
+                  Sevkiyat Planlayıcı & Haftalık Menü Yönetimi
                 </span>
               </div>
             </div>
@@ -227,11 +357,12 @@ export default function AdminDashboard({ onExitAdmin }) {
           </div>
         </div>
 
-        {/* 2. PANEL SEKME GEZİNTİSİ (Zarif Editoryal Sekmeler) */}
-        <div className="flex border-b border-stone-300 gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
+        {/* 2. PANEL SEKME GEZİNTİSİ */}
+        <div className="flex border-b border-stone-300 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
           {[
-            { id: 'deliveries', label: '🛵 Günün Sevkiyat & Dağıtım Listesi', count: orders.length },
+            { id: 'deliveries', label: '🛵 Günün Dağıtım Listesi', count: orders.length },
             { id: 'kitchen', label: '🍳 Mutfak Aşçı Porsiyon Planı' },
+            { id: 'menu-updater', label: '📄 Haftalık Menü Yükle (PDF / Dosya)', highlight: true },
             { id: 'customers', label: '👥 Kayıtlı Müşteriler & Aboneler', count: customers.length },
             { id: 'sales', label: '📊 Finans & Kasa Özeti' }
           ].map(tab => (
@@ -241,10 +372,17 @@ export default function AdminDashboard({ onExitAdmin }) {
               className={`pb-3 text-sm font-serif tracking-wide transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
                 activeTab === tab.id
                   ? 'text-[#0e3d29] font-bold border-b-2 border-[#0e3d29]'
+                  : tab.highlight
+                  ? 'text-amber-900 font-bold hover:text-[#0e3d29]'
                   : 'text-stone-500 hover:text-stone-900 font-medium'
               }`}
             >
               <span>{tab.label}</span>
+              {tab.highlight && (
+                <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full font-sans font-bold">
+                  Pratik
+                </span>
+              )}
               {tab.count !== undefined && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-stone-200 text-stone-700 font-sans font-bold">
                   {tab.count}
@@ -253,6 +391,211 @@ export default function AdminDashboard({ onExitAdmin }) {
             </button>
           ))}
         </div>
+
+        {/* ===================== SEKME: HAFTALIK MENÜ YÜKLE (PDF / DOSYA / METİN) ===================== */}
+        {activeTab === 'menu-updater' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            
+            {/* Üst Açıklama ve Yükleme Kartı */}
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-2xs space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
+                    <Sparkles size={14} />
+                    <span>Hızlı Menü Otomasyonu</span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-[#0e3d29]">
+                    Haftalık Menü Yükleme & Güncelleme
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                    Gün gün yemek yazmakla uğraşmayın! Matbaadan/tasarımcıdan gelen PDF dosyasını yükleyin veya menü listesini yapıştırın; sistem otomatik ayrıştırıp güncellesin.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={weekRange}
+                    onChange={e => setWeekRange(e.target.value)}
+                    placeholder="Tarih: 16 - 21 Kasım 2026"
+                    className="px-3 py-1.5 rounded-xl border border-stone-300 text-xs font-bold text-[#0e3d29] bg-stone-50 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              {/* 2 İçe Aktarma Yolu (PDF / Dosya veya Hızlı Metin) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* 1. PDF / Dosya Yükleme Alanı */}
+                <div className="border-2 border-dashed border-stone-300 hover:border-[#0e3d29] rounded-2xl p-6 text-center transition-colors bg-[#faf7f2]/50 flex flex-col items-center justify-center space-y-3 relative group">
+                  <input
+                    type="file"
+                    accept=".pdf,image/*,.docx,.txt"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileUp size={24} />
+                  </div>
+                  <div>
+                    <span className="font-serif font-bold text-sm text-stone-900 block">
+                      Haftalık Menü PDF'i veya Görselini Yükle
+                    </span>
+                    <span className="text-xs text-stone-500">
+                      PDF, PNG veya JPEG dosyasını sürükleyin veya seçin
+                    </span>
+                  </div>
+                  {uploadedFile && (
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                      📄 Yüklendi: {uploadedFile.name}
+                    </span>
+                  )}
+                  {isAnalyzing && (
+                    <span className="text-xs font-bold text-amber-800 animate-pulse">
+                      ⏳ Menü yapısı analiz ediliyor ve günlere dağıtılıyor...
+                    </span>
+                  )}
+                </div>
+
+                {/* 2. WhatsApp / Liste Metni Yapıştırma */}
+                <div className="border border-stone-200 rounded-2xl p-5 bg-white space-y-3 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <span className="font-serif font-bold text-sm text-stone-900 block">
+                      Veya WhatsApp / Word Menü Listesini Yapıştır
+                    </span>
+                    <span className="text-xs text-stone-500">
+                      Restoran grubundan gelen yemek listesini direkt buraya yapıştırıp ayrıştırabilirsiniz.
+                    </span>
+                    <textarea
+                      rows="3"
+                      placeholder="Pazartesi: Mercimek Çorbası, Krepçi Yağlama, Pirinç Pilavı&#10;Salı: Domates Çorbası, Etli Kuru Fasulye..."
+                      value={rawText}
+                      onChange={e => setRawText(e.target.value)}
+                      className="w-full mt-2 p-2.5 rounded-xl border border-stone-200 text-xs focus:outline-hidden focus:border-[#0e3d29] bg-stone-50"
+                    ></textarea>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleParseRawText}
+                    className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles size={14} className="text-amber-700" />
+                    <span>Metni Otomatik Ayrıştır & Günlere Dağıt</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Başarı Bildirimi */}
+            {publishSuccess && (
+              <div className="p-4 bg-emerald-500 text-white rounded-2xl shadow-md flex items-center justify-between text-xs sm:text-sm font-bold animate-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-2">
+                  <Check size={18} />
+                  <span>Haftalık menü başarıyla güncellendi! Web sitesi ve mobil uygulama anında yeni menüyü canlıya aldı.</span>
+                </div>
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Canlıda</span>
+              </div>
+            )}
+
+            {/* ================= GÖRSEL DÜZENLEME & KONTROL TABLOSU ================= */}
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-2xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+                <div>
+                  <h4 className="font-serif font-bold text-lg text-[#0e3d29]">
+                    Önizleme & Hızlı Düzenleme ({weekRange})
+                  </h4>
+                  <p className="text-xs text-stone-500">
+                    Ayrıştırılan yemekleri kontrol edin; varsa ufak değişiklikleri kutucuklara tıklayarak virgülle yazıp düzeltin.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handlePublishMenu}
+                  className="px-6 py-3 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                >
+                  <Sparkles size={15} className="text-[#e2991e]" />
+                  <span>Menüyü Sisteme Yayınla & Canlıya Al</span>
+                  <ArrowRight size={14} className="text-[#e2991e]" />
+                </button>
+              </div>
+
+              {/* 6 Günlük Kartlar Tablosu */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 text-xs">
+                {draftMenu.map((day, idx) => (
+                  <div key={day.id} className="p-4 rounded-2xl border border-stone-200 bg-[#faf7f2]/60 space-y-3">
+                    <div className="border-b border-stone-200 pb-1.5 flex justify-between items-baseline">
+                      <span className="font-serif font-bold text-sm text-[#0e3d29]">{day.dayName}</span>
+                      <span className="text-[10px] text-stone-400">{day.date}</span>
+                    </div>
+
+                    {/* Çorbalar */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">🍵 Çorbalar</span>
+                      <input
+                        type="text"
+                        value={day.corbalar.join(', ')}
+                        onChange={e => handleEditDraftItem(idx, 'corbalar', e.target.value)}
+                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
+                      />
+                    </div>
+
+                    {/* Ana Yemekler */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#0e3d29] block">🥘 Ana Yemekler</span>
+                      <textarea
+                        rows="3"
+                        value={day.anaYemekler.join(', ')}
+                        onChange={e => handleEditDraftItem(idx, 'anaYemekler', e.target.value)}
+                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
+                      ></textarea>
+                    </div>
+
+                    {/* Pilav & Makarna */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 block">🍚 Pilav & Makarna</span>
+                      <input
+                        type="text"
+                        value={day.pilavMakarna.join(', ')}
+                        onChange={e => handleEditDraftItem(idx, 'pilavMakarna', e.target.value)}
+                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
+                      />
+                    </div>
+
+                    {/* Salata & Meze */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 block">🥗 Salata & Meze</span>
+                      <input
+                        type="text"
+                        value={day.salataMeze.slice(0, 3).join(', ')}
+                        onChange={e => handleEditDraftItem(idx, 'salataMeze', e.target.value)}
+                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Alt Yayınlama Barı */}
+              <div className="pt-4 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span className="text-xs text-stone-500">
+                  Değişiklikleri kaydettiğiniz anda abonelik planlayıcısı, haftalık menü sayfası ve mobil uygulama otomatik olarak yeni menüye geçer.
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handlePublishMenu}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Check size={16} className="text-[#e2991e]" />
+                  <span>Değişiklikleri Onayla & Canlıya Al</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        )}
 
         {/* ===================== SEKME 1: SEVKİYAT & GÜNLÜK DAĞITIM LİSTESİ ===================== */}
         {activeTab === 'deliveries' && (
@@ -319,7 +662,7 @@ export default function AdminDashboard({ onExitAdmin }) {
                     key={order.id}
                     className="bg-white rounded-2xl p-5 border border-stone-200 hover:border-[#0e3d29] transition-all shadow-2xs space-y-4"
                   >
-                    {/* Üst Satır: Müşteri & Saat & Durum */}
+                    {/* Üst Satır */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-3">
                       <div className="flex items-baseline gap-3">
                         <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
@@ -364,10 +707,8 @@ export default function AdminDashboard({ onExitAdmin }) {
                       </div>
                     </div>
 
-                    {/* Orta Satır: Ne Gönderilecek? (Günün Menüsü) & Nereye Gidecek? (Adres) */}
+                    {/* Orta Satır */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
-                      
-                      {/* Yemek İçeriği (Aşçının / Kuryenin Pakete Koyacağı Menü) */}
                       <div className="md:col-span-6 space-y-1 bg-[#faf7f2] p-3 rounded-xl border border-stone-200/80">
                         <span className="text-[10px] font-bold text-[#0e3d29] uppercase tracking-wider block">
                           Paket İçeriği ({order.tierName}):
@@ -387,7 +728,6 @@ export default function AdminDashboard({ onExitAdmin }) {
                         )}
                       </div>
 
-                      {/* Teslimat Adresi & Bölge */}
                       <div className="md:col-span-4 space-y-1 flex flex-col justify-center">
                         <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block flex items-center gap-1">
                           <MapPin size={12} className="text-rose-600" />
@@ -398,7 +738,6 @@ export default function AdminDashboard({ onExitAdmin }) {
                         </p>
                       </div>
 
-                      {/* Ödeme Durumu & Tutar */}
                       <div className="md:col-span-2 space-y-1 flex flex-col justify-center text-left md:text-right">
                         <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
                           Ödeme / Tutar
@@ -420,10 +759,9 @@ export default function AdminDashboard({ onExitAdmin }) {
                             : 'Kapıda Bekliyor'}
                         </span>
                       </div>
-
                     </div>
 
-                    {/* Alt Hızlı Durum Butonları */}
+                    {/* Alt Durum Butonları */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
                       <div className="flex items-center gap-2">
                         <span className="text-stone-500 text-[11px]">Durumu Güncelle:</span>
@@ -497,8 +835,6 @@ export default function AdminDashboard({ onExitAdmin }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              
-              {/* Çorbalar Porsiyon */}
               <div className="bg-white p-5 rounded-2xl border border-stone-200 space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <h4 className="font-serif font-bold text-sm text-[#0e3d29]">🍵 Çorbalar</h4>
@@ -516,7 +852,6 @@ export default function AdminDashboard({ onExitAdmin }) {
                 </div>
               </div>
 
-              {/* Ana Yemekler Porsiyon */}
               <div className="bg-white p-5 rounded-2xl border border-stone-200 space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <h4 className="font-serif font-bold text-sm text-[#0e3d29]">🥘 Ana Yemekler</h4>
@@ -534,7 +869,6 @@ export default function AdminDashboard({ onExitAdmin }) {
                 </div>
               </div>
 
-              {/* Pilav & Makarna Porsiyon */}
               <div className="bg-white p-5 rounded-2xl border border-stone-200 space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <h4 className="font-serif font-bold text-sm text-[#0e3d29]">🍚 Pilav & Makarna</h4>
@@ -552,7 +886,6 @@ export default function AdminDashboard({ onExitAdmin }) {
                 </div>
               </div>
 
-              {/* Salata & Mezeler */}
               <div className="bg-white p-5 rounded-2xl border border-stone-200 space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <h4 className="font-serif font-bold text-sm text-[#0e3d29]">🥗 Salata & Meze</h4>
@@ -569,7 +902,6 @@ export default function AdminDashboard({ onExitAdmin }) {
                   ))}
                 </div>
               </div>
-
             </div>
           </div>
         )}

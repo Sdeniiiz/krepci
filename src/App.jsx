@@ -12,7 +12,7 @@ import AuthModal from './components/AuthModal';
 import MobileSimulator from './components/MobileSimulator';
 import AdminDashboard from './components/AdminDashboard';
 import OpeningPosterSplash from './components/OpeningPosterSplash';
-import { BRAND_INFO, PRICING_TIERS } from './data/menuData';
+import { BRAND_INFO, PRICING_TIERS, DAYS_MENU } from './data/menuData';
 import { Phone, MessageCircle, Smartphone } from 'lucide-react';
 
 export default function App() {
@@ -22,6 +22,32 @@ export default function App() {
   const [isMobileSimulatorOpen, setIsMobileSimulatorOpen] = useState(false);
   const [activeSubscription, setActiveSubscription] = useState(null);
   const [user, setUser] = useState(null);
+
+  // Haftalık Menü Durumu (Yönetici güncellediğinde anında tüm sitede ve mobilde güncellenir)
+  const [weeklyMenu, setWeeklyMenu] = useState(() => {
+    try {
+      const saved = localStorage.getItem('krepci_custom_weekly_menu');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return DAYS_MENU;
+  });
+
+  const [menuWeekRange, setMenuWeekRange] = useState(() => {
+    try {
+      const saved = localStorage.getItem('krepci_menu_week_range');
+      if (saved) return saved;
+    } catch (e) {}
+    return '09 - 14 Kasım 2026';
+  });
+
+  const handleMenuUpdated = (newMenu, newRange) => {
+    setWeeklyMenu(newMenu);
+    if (newRange) setMenuWeekRange(newRange);
+    try {
+      localStorage.setItem('krepci_custom_weekly_menu', JSON.stringify(newMenu));
+      if (newRange) localStorage.setItem('krepci_menu_week_range', newRange);
+    } catch (e) {}
+  };
 
   // URL Hash kontrolü (#admin ile doğrudan açabilme)
   useEffect(() => {
@@ -57,7 +83,13 @@ export default function App() {
 
   // Eğer Yönetici Modundaysa
   if (activeTab === 'admin') {
-    return <AdminDashboard onExitAdmin={() => setActiveTab('menu')} />;
+    return (
+      <AdminDashboard 
+        onExitAdmin={() => setActiveTab('menu')} 
+        currentWeeklyMenu={weeklyMenu}
+        onMenuUpdated={handleMenuUpdated}
+      />
+    );
   }
 
   return (
@@ -87,6 +119,8 @@ export default function App() {
               onOpenPosterModal={() => setIsPosterOpen(true)}
             />
             <WeeklyMenu
+              menuList={weeklyMenu}
+              weekRange={menuWeekRange}
               onSelectDayForPlan={handleSelectDayForPlan}
               onQuickOrderDay={handleQuickOrderDay}
             />
@@ -176,6 +210,7 @@ export default function App() {
       <MobileSimulator
         isOpen={isMobileSimulatorOpen}
         onClose={() => setIsMobileSimulatorOpen(false)}
+        customMenu={weeklyMenu}
       />
 
       {/* Alt Bilgi */}

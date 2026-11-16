@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { DAYS_MENU } from '../data/menuData';
 import { Calendar, Plus, ShoppingCart, Sparkles, ArrowRight } from 'lucide-react';
 
-export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay }) {
+export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay, menuList = DAYS_MENU, weekRange = '09 - 14 Kasım 2026' }) {
+  const currentMenu = menuList && menuList.length > 0 ? menuList : DAYS_MENU;
   const [selectedDayId, setSelectedDayId] = useState('pazartesi');
-  const activeDay = DAYS_MENU.find(d => d.id === selectedDayId) || DAYS_MENU[0];
+  const activeDay = currentMenu.find(d => d.id === selectedDayId) || currentMenu[0];
 
   return (
     <section id="weekly-menu" className="py-20 bg-[#faf7f2] border-b border-stone-200">
@@ -14,7 +15,7 @@ export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay }) {
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
           <div className="flex items-center justify-center gap-2 text-xs font-bold tracking-[0.2em] text-[#0e3d29] uppercase">
             <span className="w-6 h-px bg-[#0e3d29]"></span>
-            <span>09 - 14 Kasım 2026</span>
+            <span>{weekRange}</span>
             <span className="w-6 h-px bg-[#0e3d29]"></span>
           </div>
           <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#0e3d29]">
@@ -28,7 +29,7 @@ export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay }) {
         {/* Gün Seçici (Kutu değil, The Perfect Plate usulü zarif editoryal çizgi) */}
         <div className="flex justify-center border-b border-stone-300 mb-12 overflow-x-auto no-scrollbar">
           <div className="flex gap-4 sm:gap-8 min-w-max pb-px">
-            {DAYS_MENU.map((day) => {
+            {currentMenu.map((day) => {
               const isActive = day.id === selectedDayId;
               return (
                 <button

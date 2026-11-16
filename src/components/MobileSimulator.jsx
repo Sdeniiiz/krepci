@@ -11,8 +11,10 @@ import {
 } from '../data/menuData';
 import confetti from 'canvas-confetti';
 
-export default function MobileSimulator({ isOpen, onClose }) {
+export default function MobileSimulator({ isOpen, onClose, customMenu }) {
   if (!isOpen) return null;
+
+  const daysMenuList = customMenu && customMenu.length > 0 ? customMenu : DAYS_MENU;
 
   // Mobil Akış Durumu:
   // 'quiz-taste' -> 'quiz-dislike' -> 'plan-preview' -> 'customize' -> 'checkout' -> 'success' -> 'dashboard'
@@ -125,7 +127,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
     setMobileFlow('success');
   };
 
-  const currentDayData = DAYS_MENU.find(d => d.id === selectedDayKey) || DAYS_MENU[0];
+  const currentDayData = daysMenuList.find(d => d.id === selectedDayKey) || daysMenuList[0];
 
   // Bir yemeğin elenip elenmediğini kontrol
   const isDishExcluded = (dishName) => {
@@ -375,7 +377,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
 
                 {/* Gün Seçici Tablar */}
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs pt-1">
-                  {DAYS_MENU.map(d => {
+                  {daysMenuList.map(d => {
                     const isSel = selectedDayKey === d.id;
                     return (
                       <button
@@ -504,7 +506,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
 
                 {/* Gün Seçici Tablar */}
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
-                  {DAYS_MENU.map(d => {
+                  {daysMenuList.map(d => {
                     const isSel = selectedDayKey === d.id;
                     return (
                       <button
@@ -878,7 +880,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
                   <p className="text-[11px] text-stone-500">Sevmediğin yemekler çıkarılmış temiz takvim.</p>
                 </div>
                 <div className="divide-y divide-stone-200">
-                  {DAYS_MENU.map(d => (
+                  {daysMenuList.map(d => (
                     <div key={d.id} className="py-2.5 flex justify-between items-start">
                       <div>
                         <span className="font-serif font-bold text-stone-900 block">{d.dayName}</span>
