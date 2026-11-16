@@ -166,176 +166,307 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
             İstemediğiniz yemekleri çıkarın, sevdiğiniz lezzetlerle dolu aylık veya günlük menünüzü hazırlayalım.
           </p>
 
-          {/* Zarif İlerleme Metinleri (Responsive) */}
+          {/* Zarif İlerleme Metinleri (Dinamik Süreye Göre) */}
           <div className="pt-6 flex items-center justify-between sm:justify-center gap-2 sm:gap-8 text-[11px] sm:text-xs font-medium border-b border-stone-200 pb-3 overflow-x-auto no-scrollbar">
-            {[
-              { num: 1, title: '1. Porsiyon' },
-              { num: 2, title: '2. Süre & Ödeme' },
-              { num: 3, title: '3. İstenmeyenler' },
-              { num: 4, title: '4. Menü Takvimi' },
-              { num: 5, title: '5. Teslimat' }
-            ].map(s => (
-              <button
-                key={s.num}
-                onClick={() => s.num < step && setStep(s.num)}
-                className={`pb-1 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap ${
-                  step === s.num
-                    ? 'text-[#0e3d29] font-bold border-b-2 border-[#0e3d29]'
-                    : step > s.num
-                    ? 'text-stone-800 font-semibold'
-                    : 'text-stone-400'
-                }`}
-              >
-                <span>{s.title}</span>
-                {step > s.num && <Check size={12} className="text-emerald-700" />}
-              </button>
-            ))}
+            {(duration === 'daily'
+              ? [
+                  { num: 1, title: '1. Süre & Porsiyon' },
+                  { num: 4, title: `2. ${currentDayData.dayName} Menüsü` },
+                  { num: 5, title: '3. Teslimat & Onay' }
+                ]
+              : [
+                  { num: 1, title: '1. Süre & Porsiyon' },
+                  { num: 2, title: '2. Ödeme Tercihi' },
+                  { num: 3, title: '3. İstenmeyenler' },
+                  { num: 4, title: '4. Menü Takvimi' },
+                  { num: 5, title: '5. Teslimat & Onay' }
+                ]
+            ).map((s) => {
+              const isCurrent = step === s.num;
+              const isPassed = duration === 'daily' 
+                ? (step === 5 && s.num < 5) || (step === 4 && s.num === 1)
+                : step > s.num;
+              return (
+                <button
+                  key={s.num}
+                  type="button"
+                  onClick={() => isPassed && setStep(s.num)}
+                  className={`pb-1 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                    isCurrent
+                      ? 'text-[#0e3d29] font-bold border-b-2 border-[#0e3d29]'
+                      : isPassed
+                      ? 'text-stone-800 font-semibold'
+                      : 'text-stone-400'
+                  }`}
+                >
+                  <span>{s.title}</span>
+                  {isPassed && <Check size={12} className="text-emerald-700" />}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* ===================== ADIM 1: PORSİYON SEÇİMİ ===================== */}
+        {/* ===================== ADIM 1: SÜRE & PORSİYON SEÇİMİ ===================== */}
         {step === 1 && (
-          <div className="space-y-6">
-            <div className="flex items-baseline justify-between border-b border-stone-200 pb-3">
-              <h3 className="font-serif text-xl font-bold text-[#0e3d29]">
-                Porsiyonunuzu Seçin
-              </h3>
-              <span className="text-xs text-stone-500">Günlük kaç çeşit tercih edersiniz?</span>
-            </div>
+          <div className="space-y-6 animate-in fade-in duration-200">
+            
+            {/* 1. SÜRE SEÇİMİ (EN TEPEDE) */}
+            <div className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
+                  1. Ne Kadar Süreli Yemek İstersiniz?
+                </span>
+                <span className="text-[11px] text-stone-500">
+                  {duration === 'monthly' ? 'Aylık %15 İndirimli' : duration === 'weekly' ? 'Haftalık %8 Avantajlı' : 'Tek Günlük Deneme'}
+                </span>
+              </div>
 
-            <div className="divide-y divide-stone-200">
-              {PRICING_TIERS.map((tier) => {
-                const isSelected = selectedTier.id === tier.id;
-                return (
-                  <div
-                    key={tier.id}
-                    onClick={() => {
-                      setSelectedTier(tier);
-                      setUserSchedule(generatePersonalizedPlan(selectedProfile, dislikedList, tier.itemsCount));
-                    }}
-                    className={`py-5 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-colors group ${
-                      isSelected ? 'bg-amber-50/60' : 'hover:bg-white/60'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${
-                        isSelected ? 'border-[#0e3d29] bg-[#0e3d29]' : 'border-stone-400 group-hover:border-[#0e3d29]'
-                      }`}>
-                        {isSelected && <div className="w-2 h-2 rounded-full bg-white"></div>}
-                      </div>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 p-1.5 bg-stone-200/60 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setDuration('daily')}
+                  className={`py-3 px-2 rounded-xl text-xs font-serif font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                    duration === 'daily'
+                      ? 'bg-white text-[#0e3d29] shadow-sm ring-1 ring-[#0e3d29]'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <span className="flex items-center gap-1">⚡ <span>Tek Günlük</span></span>
+                  <span className="text-[10px] font-sans font-normal opacity-75">Hızlı Sipariş</span>
+                </button>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-serif font-bold text-base text-stone-900 group-hover:text-[#0e3d29]">
-                            {tier.name}
-                          </h4>
-                          {tier.badge && (
-                            <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">
-                              {tier.badge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-stone-500 max-w-md leading-relaxed">
-                          {tier.description}
-                        </p>
-                      </div>
-                    </div>
+                <button
+                  type="button"
+                  onClick={() => setDuration('weekly')}
+                  className={`py-3 px-2 rounded-xl text-xs font-serif font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                    duration === 'weekly'
+                      ? 'bg-white text-[#0e3d29] shadow-sm ring-1 ring-[#0e3d29]'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <span className="flex items-center gap-1">📅 <span>1 Haftalık</span></span>
+                  <span className="text-[10px] font-sans font-bold text-amber-800">%8 Avantajlı</span>
+                </button>
 
-                    <div className="sm:text-right pl-9 sm:pl-0 flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center">
-                      <span className="font-serif text-2xl font-bold text-[#0e3d29]">
-                        {tier.dailyPrice} ₺
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        Aylık: ~{Math.round(tier.dailyPrice * 24 * 0.85)} ₺
-                      </span>
+                <button
+                  type="button"
+                  onClick={() => setDuration('monthly')}
+                  className={`py-3 px-2 rounded-xl text-xs font-serif font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                    duration === 'monthly'
+                      ? 'bg-white text-[#0e3d29] shadow-sm ring-1 ring-[#0e3d29]'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <span className="flex items-center gap-1">🏆 <span>1 Aylık Abone</span></span>
+                  <span className="text-[10px] font-sans font-bold text-emerald-800">%15 İndirimli</span>
+                </button>
+              </div>
+
+              {/* AKILLI FIRSAT / NUDGE ROZETLERİ (FOMO & UPSELL) */}
+              {duration === 'daily' && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-lg">💡</span>
+                    <div>
+                      <strong className="text-amber-950 font-serif">Haftalık Fırsatı Kaçırmayın!</strong>
+                      <p className="text-stone-600 text-[11px] mt-0.5">
+                        Haftalık pakete geçerseniz günlüğü <strong>{Math.round(selectedTier.dailyPrice * 0.92)} ₺</strong>'ye gelir ve her gün kapınıza ücretsiz sıcak teslim edilir.
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={() => setDuration('weekly')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#e2991e] hover:bg-[#d97706] text-stone-950 font-bold text-xs shrink-0 self-start sm:self-auto cursor-pointer"
+                  >
+                    Haftalığa Geç (%8 İndirim) ➜
+                  </button>
+                </div>
+              )}
+
+              {duration === 'weekly' && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-lg">🌟</span>
+                    <div>
+                      <strong className="text-emerald-950 font-serif">Aylık Abonelikte Büyük Avantaj!</strong>
+                      <p className="text-stone-600 text-[11px] mt-0.5">
+                        Aylık abonelikte porsiyon <strong>{Math.round(selectedTier.dailyPrice * 0.85)} ₺</strong>'ye düşer, ayda tam <strong>{Math.round(selectedTier.dailyPrice * 24 * 0.15)} ₺</strong> cebinizde kalır!
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDuration('monthly')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] font-bold text-xs shrink-0 self-start sm:self-auto cursor-pointer"
+                  >
+                    Aylık Avantajı Seç (%15 İndirim) ➜
+                  </button>
+                </div>
+              )}
+
+              {duration === 'monthly' && (
+                <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-300 text-xs flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">🏆</span>
+                    <div>
+                      <strong className="text-amber-950 font-serif">En Popüler VIP Abonelik Seçildi!</strong>
+                      <p className="text-stone-600 text-[11px]">
+                        %15 indirimli porsiyon + İstemediğiniz yemekleri otomatik filtreleme + Öncelikli mutfak servisi aktiftir.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full shrink-0">
+                    En Çok Satan
+                  </span>
+                </div>
+              )}
+
             </div>
 
-            <div className="pt-6 flex justify-end">
+            {/* EĞER TEK GÜNLÜK SEÇİLDİYSE: GÜN SEÇİCİ */}
+            {duration === 'daily' && (
+              <div className="p-4 rounded-2xl bg-white border border-stone-200 space-y-2.5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
+                    2. Yemeğiniz Hangi Gün Teslim Edilsin?
+                  </label>
+                  <span className="text-[11px] text-amber-800 font-bold">
+                    Seçili Gün: {DAYS_MENU.find(d => d.id === activeDayKey)?.dayName} ({DAYS_MENU.find(d => d.id === activeDayKey)?.date})
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                  {DAYS_MENU.map(day => {
+                    const isDaySel = activeDayKey === day.id;
+                    return (
+                      <button
+                        key={day.id}
+                        type="button"
+                        onClick={() => setActiveDayKey(day.id)}
+                        className={`py-2 px-2 rounded-xl text-center border transition-all cursor-pointer ${
+                          isDaySel
+                            ? 'bg-[#0e3d29] text-[#f7e7ce] border-[#0e3d29] font-bold shadow-xs ring-1 ring-[#e2991e]'
+                            : 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
+                        }`}
+                      >
+                        <span className="block font-serif text-xs">{day.dayName}</span>
+                        <span className={`block text-[10px] ${isDaySel ? 'text-amber-300' : 'text-stone-400'}`}>
+                          {day.date.slice(0, 5)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 2. PORSİYON PAKETİ SEÇİMİ (1, 2, 3, 4 Çeşit) */}
+            <div className="space-y-3">
+              <div className="flex items-baseline justify-between border-b border-stone-200 pb-2">
+                <h3 className="font-serif text-lg font-bold text-[#0e3d29]">
+                  {duration === 'daily' ? '3. Porsiyonunuzu Seçin' : '2. Günlük Porsiyonunuzu Seçin'}
+                </h3>
+                <span className="text-xs text-stone-500">
+                  {duration === 'daily' ? 'Bugünlük kaç çeşit lezzet istersiniz?' : 'Günde kaç çeşit sıcak yemek gelsin?'}
+                </span>
+              </div>
+
+              <div className="divide-y divide-stone-200 bg-white/60 rounded-2xl border border-stone-200 px-3">
+                {PRICING_TIERS.map((tier) => {
+                  const isSelected = selectedTier.id === tier.id;
+                  const tierPrice = duration === 'daily'
+                    ? tier.dailyPrice
+                    : duration === 'weekly'
+                    ? Math.round(tier.dailyPrice * 6 * 0.92)
+                    : Math.round(tier.dailyPrice * 24 * 0.85);
+
+                  return (
+                    <div
+                      key={tier.id}
+                      onClick={() => {
+                        setSelectedTier(tier);
+                        setUserSchedule(generatePersonalizedPlan(selectedProfile, dislikedList, tier.itemsCount));
+                      }}
+                      className={`py-4 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer transition-colors group ${
+                        isSelected ? 'bg-amber-50/70 rounded-xl' : 'hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${
+                          isSelected ? 'border-[#0e3d29] bg-[#0e3d29]' : 'border-stone-400 group-hover:border-[#0e3d29]'
+                        }`}>
+                          {isSelected && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-serif font-bold text-base text-stone-900 group-hover:text-[#0e3d29]">
+                              {tier.name}
+                            </h4>
+                            {tier.badge && (
+                              <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">
+                                {tier.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-stone-500 max-w-md leading-relaxed">
+                            {tier.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="sm:text-right pl-8 sm:pl-0 flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center">
+                        <span className="font-serif text-2xl font-bold text-[#0e3d29]">
+                          {tierPrice} ₺
+                        </span>
+                        <span className="text-[11px] text-stone-500">
+                          {duration === 'daily'
+                            ? 'Tek Günlük Sıcak Teslimat'
+                            : duration === 'weekly'
+                            ? `Günde ~${Math.round(tier.dailyPrice * 0.92)} ₺ (6 Gün)`
+                            : `Günde ~${Math.round(tier.dailyPrice * 0.85)} ₺ (${Math.round(tier.dailyPrice * 24 * 0.15)} ₺ Tasarruf)`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end">
               <button
-                onClick={() => setStep(2)}
-                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2"
+                type="button"
+                onClick={() => {
+                  if (duration === 'daily') {
+                    setStep(4); // Doğrudan o günün menüsünü seçmeye geç
+                  } else {
+                    setStep(2); // Ödeme ve filtrelere geç
+                  }
+                }}
+                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
               >
-                <span>İlerle: Süre ve Ödeme Tercihi</span>
+                <span>
+                  {duration === 'daily' 
+                    ? `İlerle: ${currentDayData.dayName} Menünü Belirle` 
+                    : 'İlerle: Ödeme ve Filtrelere Geç'}
+                </span>
                 <ArrowRight size={16} className="text-[#e2991e]" />
               </button>
             </div>
           </div>
         )}
 
-        {/* ===================== ADIM 2: SÜRE & ÖDEME MODELİ ===================== */}
+        {/* ===================== ADIM 2: ÖDEME MODELİ (HAFTALIK / AYLIK İÇİN) ===================== */}
         {step === 2 && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-200">
             <div className="space-y-4">
               <div className="border-b border-stone-200 pb-2">
-                <h3 className="font-serif text-xl font-bold text-[#0e3d29]">1. Abonelik Süreniz</h3>
-                <p className="text-xs text-stone-500">Aylık programlarda sevmediğiniz yemekler elenir, bütçe tasarrufu sağlanır.</p>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  {
-                    id: 'monthly',
-                    title: 'Aylık Abonelik (24 Gün)',
-                    sub: 'Pazartesi - Cumartesi arası taze sıcak teslimat. %15 indirimli.',
-                    price: `${Math.round(selectedTier.dailyPrice * 24 * 0.85)} ₺`,
-                    badge: '%15 Avantajlı'
-                  },
-                  {
-                    id: 'weekly',
-                    title: 'Haftalık Paket (6 Gün)',
-                    sub: 'Bir haftalık tam menü denemesi.',
-                    price: `${Math.round(selectedTier.dailyPrice * 6 * 0.92)} ₺`,
-                    badge: null
-                  },
-                  {
-                    id: 'daily',
-                    title: 'Günlük Sipariş (1 Gün)',
-                    sub: 'Tek seferlik sıcak taze ev yemeği.',
-                    price: `${selectedTier.dailyPrice} ₺`,
-                    badge: null
-                  }
-                ].map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => setDuration(item.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                      duration === item.id
-                        ? 'border-[#0e3d29] bg-white shadow-xs'
-                        : 'border-stone-200 hover:border-stone-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        duration === item.id ? 'border-[#0e3d29] bg-[#0e3d29]' : 'border-stone-400'
-                      }`}>
-                        {duration === item.id && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-serif font-bold text-sm text-stone-900">{item.title}</span>
-                          {item.badge && (
-                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-stone-500">{item.sub}</p>
-                      </div>
-                    </div>
-                    <span className="font-serif font-bold text-base text-[#0e3d29]">{item.price}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="border-b border-stone-200 pb-2">
-                <h3 className="font-serif text-xl font-bold text-[#0e3d29]">2. Ödeme Tercihiniz</h3>
-                <p className="text-xs text-stone-500">Aylık avantajlı online ödeme veya her gün kapıda ödeme.</p>
+                <h3 className="font-serif text-xl font-bold text-[#0e3d29]">Ödeme Tercihiniz</h3>
+                <p className="text-xs text-stone-500">
+                  {duration === 'monthly' ? 'Aylık aboneliğiniz için ödeme şeklini seçin.' : 'Haftalık siparişiniz için ödeme şeklini seçin.'}
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -389,6 +520,7 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
 
             <div className="pt-4 flex justify-between items-center border-t border-stone-200">
               <button
+                type="button"
                 onClick={() => setStep(1)}
                 className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
               >
@@ -396,8 +528,9 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                 <span>Porsiyona Dön</span>
               </button>
               <button
+                type="button"
                 onClick={() => setStep(3)}
-                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
               >
                 <span>İlerle: İstemediğin Yiyecekleri Belirle</span>
                 <ArrowRight size={16} className="text-[#e2991e]" />
@@ -540,45 +673,69 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
 
         {/* ===================== ADIM 4: FİLTRELENMİŞ MENÜ TAKVİMİ ===================== */}
         {step === 4 && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in duration-200">
+            
+            {/* Üst Başlık (Günlük vs Abonelik) */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-3">
               <div>
-                <h3 className="font-serif text-xl font-bold text-[#0e3d29]">
-                  Kişiselleştirilmiş Haftalık Menünüz
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
+                  <span>{duration === 'daily' ? '⚡ Tek Günlük Menü' : '🛡️ Kişiselleştirilmiş Menü'}</span>
+                </div>
+                <h3 className="font-serif text-2xl font-bold text-[#0e3d29]">
+                  {duration === 'daily' 
+                    ? `${currentDayData.dayName} Günü Menünüzü Seçin (${currentDayData.date})`
+                    : 'Haftalık Kişiselleştirilmiş Menünüz'}
                 </h3>
-                <p className="text-xs text-stone-500">
-                  İstemediğiniz yemekler çıkarılarak size özel oluşturulmuş haftalık sofra.
+                <p className="text-xs text-stone-500 mt-0.5">
+                  {duration === 'daily'
+                    ? `Yalnızca ${currentDayData.dayName} günü adresinize teslim edilecek ${selectedTier.name} (${selectedTier.itemsCount} Çeşit) menünüzü belirleyin.`
+                    : 'İstemediğiniz yemekler çıkarılarak size özel oluşturulmuş 6 günlük sofra.'}
                 </p>
               </div>
 
-              {dislikedList.length > 0 && (
-                <div className="text-[11px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+              {duration !== 'daily' && dislikedList.length > 0 && (
+                <div className="text-[11px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full shrink-0">
                   🛡️ {dislikedList.length} malzeme filtrelendi
                 </div>
               )}
             </div>
 
-            {/* Gün Seçici İnce Sekmeler */}
-            <div className="flex gap-2 sm:gap-4 overflow-x-auto no-scrollbar border-b border-stone-200 pb-2">
-              {DAYS_MENU.map((d) => {
-                const isActive = d.id === activeDayKey;
-                return (
-                  <button
-                    key={d.id}
-                    onClick={() => setActiveDayKey(d.id)}
-                    className={`px-3 py-1.5 text-xs font-serif transition-all cursor-pointer ${
-                      isActive
-                        ? 'text-[#0e3d29] font-bold border-b-2 border-[#0e3d29]'
-                        : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    {d.dayName}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Gün Seçici Sekmeler (Sadece Haftalık ve Aylıkta tüm günler görünür; Günlükte seçilen gün sabit görünür) */}
+            {duration !== 'daily' ? (
+              <div className="flex gap-2 sm:gap-4 overflow-x-auto no-scrollbar border-b border-stone-200 pb-2">
+                {DAYS_MENU.map((d) => {
+                  const isActive = d.id === activeDayKey;
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => setActiveDayKey(d.id)}
+                      className={`px-3 py-1.5 text-xs font-serif transition-all cursor-pointer ${
+                        isActive
+                          ? 'text-[#0e3d29] font-bold border-b-2 border-[#0e3d29]'
+                          : 'text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      {d.dayName}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between bg-amber-50/80 px-4 py-2.5 rounded-xl border border-amber-200/80 text-xs">
+                <span className="text-[#0e3d29] font-serif font-bold">
+                  📅 Seçilen Sipariş Günü: <strong>{currentDayData.dayName} ({currentDayData.date})</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-amber-900 hover:text-amber-950 font-bold hover:underline cursor-pointer"
+                >
+                  Farklı Gün Seç ↺
+                </button>
+              </div>
+            )}
 
-            {/* Seçili Günün Seçenekleri */}
+            {/* Seçili Günün Yemek Seçenekleri */}
             <div className="space-y-6">
               
               {/* Çorba */}
@@ -690,7 +847,7 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               </div>
 
               {/* Seçili Gün Tabağı Özeti */}
-              <div className="p-4 bg-[#0e3d29] text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="p-4 bg-[#0e3d29] text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-[#e2991e] font-bold uppercase tracking-wider text-[10px]">
@@ -722,15 +879,17 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
             {/* Alt Gezinme */}
             <div className="pt-4 flex justify-between items-center border-t border-stone-200">
               <button
-                onClick={() => setStep(3)}
+                type="button"
+                onClick={() => setStep(duration === 'daily' ? 1 : 3)}
                 className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
               >
                 <ArrowLeft size={14} />
-                <span>Filtrelere Dön</span>
+                <span>{duration === 'daily' ? 'Porsiyona Dön' : 'Filtrelere Dön'}</span>
               </button>
               <button
+                type="button"
                 onClick={() => setStep(5)}
-                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
               >
                 <span>İlerle: Teslimat ve Onay</span>
                 <ArrowRight size={16} className="text-[#e2991e]" />
@@ -739,120 +898,197 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
           </div>
         )}
 
-        {/* ===================== ADIM 5: TESLİMAT VE ONAY ===================== */}
+        {/* ===================== ADIM 5: TESLİMAT VE NET SİPARİŞ ONAYI ===================== */}
         {step === 5 && (
-          <form onSubmit={handleFinish} className="space-y-6">
-            <div className="border-b border-stone-200 pb-2">
-              <h3 className="font-serif text-xl font-bold text-[#0e3d29]">Teslimat Bilgileriniz</h3>
-              <p className="text-xs text-stone-500">Sıcak yemeklerinizin adresinize doğru zamanda ulaşması için bilgilerinizi girin.</p>
+          <form onSubmit={handleFinish} className="space-y-6 animate-in fade-in duration-200">
+            
+            {/* KOCAMAN VE NET SİPARİŞ ÖZETİ KARTI (ŞÜPHEYİ TAMAMEN YOK EDEN ALAN) */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-[#0e3d29] text-[#f7e7ce] space-y-4 shadow-lg border-2 border-[#e2991e]/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/15 pb-3">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#e2991e] block">
+                    {duration === 'daily' ? '⚡ TEK GÜNLÜK SİPARİŞ ÖZETİ' : duration === 'weekly' ? '📅 1 HAFTALIK PAKET ÖZETİ' : '🏆 1 AYLIK ABONELİK ÖZETİ'}
+                  </span>
+                  <h4 className="font-serif font-bold text-xl text-white">
+                    {duration === 'daily' 
+                      ? `${currentDayData.dayName} Günü Menünüz (${currentDayData.date})`
+                      : duration === 'weekly' 
+                      ? '6 Günlük Haftalık Yemek Paketi' 
+                      : '24 Günlük Düzenli Ev Yemeği Aboneliği'}
+                  </h4>
+                </div>
+                <span className="text-xs bg-[#e2991e] text-stone-950 px-3 py-1 rounded-full font-bold self-start sm:self-auto shadow-sm">
+                  {selectedTier.name} ({selectedTier.itemsCount} Çeşit)
+                </span>
+              </div>
+
+              {/* Günlük Sipariş İçeriği */}
+              {duration === 'daily' ? (
+                <div className="space-y-2 text-xs">
+                  <div className="text-[11px] text-stone-300 font-bold uppercase tracking-wider text-amber-200">
+                    Seçtiğiniz Menü Detayı:
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white/10 p-3 rounded-2xl border border-white/10">
+                    <div>
+                      <span className="text-[#e2991e] font-bold block text-[10px] uppercase">🍵 Çorba:</span>
+                      <strong className="text-white text-xs">{userSchedule[activeDayKey]?.corba || 'Seçilmedi'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[#e2991e] font-bold block text-[10px] uppercase">🥘 Ana Yemek:</span>
+                      <strong className="text-white text-xs">{userSchedule[activeDayKey]?.anaYemek || 'Seçilmedi'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[#e2991e] font-bold block text-[10px] uppercase">🍚 Pilav/Makarna:</span>
+                      <strong className="text-white text-xs">{userSchedule[activeDayKey]?.pilav || 'Seçilmedi'}</strong>
+                    </div>
+                    {userSchedule[activeDayKey]?.salata && (
+                      <div className="sm:col-span-3 pt-1 border-t border-white/10">
+                        <span className="text-[#e2991e] font-bold block text-[10px] uppercase">🥗 Salata/Meze:</span>
+                        <strong className="text-white text-xs">{userSchedule[activeDayKey]?.salata}</strong>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-stone-300 pt-1 flex items-center gap-1.5">
+                    <span>📅 <strong>Teslim Edilecek Gün:</strong> {currentDayData.dayName}, {currentDayData.date}</span>
+                  </div>
+                </div>
+              ) : (
+                /* Haftalık / Aylık Sipariş İçeriği */
+                <div className="space-y-1.5 text-xs text-stone-300">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400">🚚</span>
+                    <span><strong>Dağıtım Günleri:</strong> Pazartesi'den Cumartesi'ye her gün taze sıcak servis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400">🍲</span>
+                    <span><strong>İlk Gün Dağıtımı:</strong> {DAYS_MENU[0]?.dayName} ({userSchedule['pazartesi']?.anaYemek || 'Günün Menüsü'})</span>
+                  </div>
+                  {dislikedList.length > 0 && (
+                    <div className="flex items-center gap-2 text-emerald-300">
+                      <span>🛡️</span>
+                      <span><strong>Filtrelenen Malzemeler:</strong> {dislikedList.join(', ')} otomatik elendi</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <span className="text-stone-300">
+                  Ödeme Tercihi: <strong className="text-white">{paymentMethod === 'online-card' ? 'Online Kart (Güvenli)' : 'Kapıda Nakit / Kredi Kartı POS'}</strong>
+                </span>
+                <div className="text-right">
+                  <span className="text-xs text-stone-300 block">Ödenecek Toplam Tutar:</span>
+                  <span className="text-[#e2991e] font-serif text-3xl font-bold">{finalTotal} ₺</span>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* TESLİMAT BİLGİLERİ FORMU */}
+            <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-2xs space-y-4">
+              <div className="border-b border-stone-200 pb-2">
+                <h3 className="font-serif text-lg font-bold text-[#0e3d29]">Teslimat Adresiniz ve Saatiniz</h3>
+                <p className="text-xs text-stone-500">Sıcak yemeklerinizin kapınıza tam vaktinde ulaşması için bilgileri doldurun.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Adınız Soyadınız *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ahmet Yılmaz"
+                      value={deliveryInfo.fullName}
+                      onChange={e => setDeliveryInfo({ ...deliveryInfo, fullName: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-stone-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Telefon Numaranız *</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="05XX XXX XX XX"
+                      value={deliveryInfo.phone}
+                      onChange={e => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-stone-50"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Adınız Soyadınız *</label>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Teslimat Saat Aralığı</label>
+                  <div className="flex gap-4 text-xs font-medium">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="slot"
+                        checked={deliveryInfo.timeSlot === '11:30 - 13:00'}
+                        onChange={() => setDeliveryInfo({ ...deliveryInfo, timeSlot: '11:30 - 13:00' })}
+                      />
+                      <span>Öğle Servisi (11:30 - 13:00)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="slot"
+                        checked={deliveryInfo.timeSlot === '17:30 - 19:30'}
+                        onChange={() => setDeliveryInfo({ ...deliveryInfo, timeSlot: '17:30 - 19:30' })}
+                      />
+                      <span>Akşam Servisi (17:30 - 19:30)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Açık Adres (Ev veya Şirket) *</label>
+                  <textarea
+                    required
+                    rows="3"
+                    placeholder="Mahalle, Cadde, Sokak, No, Daire, Varsa Şirket Kat Bilgisi..."
+                    value={deliveryInfo.address}
+                    onChange={e => setDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-stone-50"
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Aşçıya veya Kuryeye Özel Not</label>
                   <input
                     type="text"
-                    required
-                    placeholder="Ahmet Yılmaz"
-                    value={deliveryInfo.fullName}
-                    onChange={e => setDeliveryInfo({ ...deliveryInfo, fullName: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-white"
+                    placeholder="Örn: Az tuzlu rica ederim / Kapıda zile basmayın"
+                    value={deliveryInfo.notes}
+                    onChange={e => setDeliveryInfo({ ...deliveryInfo, notes: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-xs focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-stone-50"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Telefon Numaranız *</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="05XX XXX XX XX"
-                    value={deliveryInfo.phone}
-                    onChange={e => setDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Teslimat Saat Aralığı</label>
-                <div className="flex gap-4 text-xs font-medium">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="slot"
-                      checked={deliveryInfo.timeSlot === '11:30 - 13:00'}
-                      onChange={() => setDeliveryInfo({ ...deliveryInfo, timeSlot: '11:30 - 13:00' })}
-                    />
-                    <span>Öğle Servisi (11:30 - 13:00)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="slot"
-                      checked={deliveryInfo.timeSlot === '17:30 - 19:30'}
-                      onChange={() => setDeliveryInfo({ ...deliveryInfo, timeSlot: '17:30 - 19:30' })}
-                    />
-                    <span>Akşam Servisi (17:30 - 19:30)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Açık Adres (Ev veya Şirket) *</label>
-                <textarea
-                  required
-                  rows="3"
-                  placeholder="Mahalle, Cadde, Sokak, No, Daire, Varsa Şirket Kat Bilgisi..."
-                  value={deliveryInfo.address}
-                  onChange={e => setDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-white"
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Aşçıya veya Kuryeye Özel Not</label>
-                <input
-                  type="text"
-                  placeholder="Örn: Az tuzlu rica ederim / Kapıda zile basmayın"
-                  value={deliveryInfo.notes}
-                  onChange={e => setDeliveryInfo({ ...deliveryInfo, notes: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-sm focus:ring-1 focus:ring-[#0e3d29] focus:outline-hidden bg-white"
-                />
               </div>
             </div>
 
-            {/* Sipariş Özeti & Onay Butonu */}
-            <div className="pt-4 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                <span className="text-xs text-stone-500 block">Toplam Tutar ({duration === 'monthly' ? 'Aylık 24 Gün' : 'Haftalık'}):</span>
-                <span className="font-serif text-3xl font-bold text-[#0e3d29]">{finalTotal} ₺</span>
-                <span className="text-xs text-stone-500 block">
-                  {paymentMethod === 'online-card' ? 'Online Güvenli Ödeme' : 'Her gün kapıda nakit/POS ile'}
+            {/* Alt Butonlar */}
+            <div className="pt-2 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => setStep(4)}
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 px-4 py-2 cursor-pointer flex items-center gap-1"
+              >
+                <ArrowLeft size={14} />
+                <span>Menüye Dön</span>
+              </button>
+              <button
+                type="submit"
+                className="px-10 py-4 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <Check size={18} className="text-[#e2991e]" />
+                <span>
+                  {duration === 'daily' 
+                    ? `${currentDayData.dayName} Günlük Siparişimi Onayla (${finalTotal} ₺)` 
+                    : `Yemek Programımı Onayla & Başlat (${finalTotal} ₺)`}
                 </span>
-                {dislikedList.length > 0 && (
-                  <span className="text-[11px] text-emerald-800 font-semibold block mt-0.5">
-                    ✓ {dislikedList.length} adet istemediğiniz malzeme paketten çıkarıldı
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => setStep(4)}
-                  className="text-xs font-bold text-stone-600 hover:text-stone-900 px-4 py-2"
-                >
-                  Geri
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 sm:flex-none px-10 py-4 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Yemek Programımı Kaydet & Başlat</span>
-                  <ArrowRight size={16} className="text-[#e2991e]" />
-                </button>
-              </div>
+                <ArrowRight size={16} className="text-[#e2991e]" />
+              </button>
             </div>
+
           </form>
         )}
 

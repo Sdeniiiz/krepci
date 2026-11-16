@@ -684,33 +684,127 @@ export default function MobileSimulator({ isOpen, onClose, customMenu }) {
                   <p className="text-[11px] text-stone-500">Yemeklerinin nereye ve ne zaman gelmesini istersin?</p>
                 </div>
 
-                {/* Plan Süresi */}
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-stone-700 block">Paket Tercihi:</span>
-                  <div className="grid grid-cols-2 gap-2">
+                {/* Plan Süresi (3 Seçenek) */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-stone-700 block">Paket Süreniz:</span>
+                  <div className="grid grid-cols-3 gap-1.5">
                     <div
-                      onClick={() => setDuration('monthly')}
-                      className={`p-2.5 rounded-xl border cursor-pointer ${
-                        duration === 'monthly' ? 'border-[#0e3d29] bg-white shadow-2xs font-bold' : 'border-stone-200 bg-white/60 text-stone-600'
+                      onClick={() => setDuration('daily')}
+                      className={`p-2 rounded-xl border text-center cursor-pointer transition-all ${
+                        duration === 'daily' ? 'border-[#0e3d29] bg-white shadow-2xs font-bold ring-1 ring-[#0e3d29]' : 'border-stone-200 bg-white/60 text-stone-600'
                       }`}
                     >
-                      <div className="text-[10px] text-amber-800">%15 İndirimli</div>
-                      <span className="block font-serif text-xs">Aylık (24 Gün)</span>
-                      <span className="font-serif text-[#0e3d29]">{Math.round(basePrice * 24 * 0.85)} ₺</span>
+                      <span className="block font-serif text-[11px]">Tek Günlük</span>
+                      <span className="font-serif text-[#0e3d29] font-bold">{basePrice} ₺</span>
                     </div>
 
                     <div
-                      onClick={() => setDuration('daily')}
-                      className={`p-2.5 rounded-xl border cursor-pointer ${
-                        duration === 'daily' ? 'border-[#0e3d29] bg-white shadow-2xs font-bold' : 'border-stone-200 bg-white/60 text-stone-600'
+                      onClick={() => setDuration('weekly')}
+                      className={`p-2 rounded-xl border text-center cursor-pointer transition-all ${
+                        duration === 'weekly' ? 'border-[#0e3d29] bg-white shadow-2xs font-bold ring-1 ring-[#0e3d29]' : 'border-stone-200 bg-white/60 text-stone-600'
                       }`}
                     >
-                      <div className="text-[10px] text-stone-400">Tek Günlük</div>
-                      <span className="block font-serif text-xs">Günlük Sipariş</span>
-                      <span className="font-serif text-[#0e3d29]">{basePrice} ₺</span>
+                      <div className="text-[9px] text-amber-800 font-bold">%8 İndirim</div>
+                      <span className="block font-serif text-[11px]">Haftalık (6 Gün)</span>
+                      <span className="font-serif text-[#0e3d29] font-bold">{Math.round(basePrice * 6 * 0.92)} ₺</span>
+                    </div>
+
+                    <div
+                      onClick={() => setDuration('monthly')}
+                      className={`p-2 rounded-xl border text-center cursor-pointer transition-all ${
+                        duration === 'monthly' ? 'border-[#0e3d29] bg-white shadow-2xs font-bold ring-1 ring-[#0e3d29]' : 'border-stone-200 bg-white/60 text-stone-600'
+                      }`}
+                    >
+                      <div className="text-[9px] text-emerald-800 font-bold">%15 İndirim</div>
+                      <span className="block font-serif text-[11px]">Aylık (24 Gün)</span>
+                      <span className="font-serif text-[#0e3d29] font-bold">{Math.round(basePrice * 24 * 0.85)} ₺</span>
                     </div>
                   </div>
+
+                  {/* Mobil Fırsat / Upsell Rozeti */}
+                  {duration === 'daily' && (
+                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] flex items-center justify-between gap-2">
+                      <span>💡 <strong>Haftalık pakete geç:</strong> Porsiyon {Math.round(basePrice * 0.92)} ₺'ye düşsün!</span>
+                      <button
+                        type="button"
+                        onClick={() => setDuration('weekly')}
+                        className="px-2 py-1 bg-[#e2991e] text-stone-950 rounded-lg text-[10px] font-bold shrink-0 cursor-pointer"
+                      >
+                        Haftalık Yap
+                      </button>
+                    </div>
+                  )}
+
+                  {duration === 'weekly' && (
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] flex items-center justify-between gap-2">
+                      <span>🌟 <strong>Aylık abonelikte:</strong> Ayda {Math.round(basePrice * 24 * 0.15)} ₺ cebinde kalsın!</span>
+                      <button
+                        type="button"
+                        onClick={() => setDuration('monthly')}
+                        className="px-2 py-1 bg-[#0e3d29] text-[#f7e7ce] rounded-lg text-[10px] font-bold shrink-0 cursor-pointer"
+                      >
+                        Aylık Yap
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {/* EĞER TEK GÜNLÜK İSE: GÜN SEÇİCİ & SİPARİŞ ÖZETİ */}
+                {duration === 'daily' && (
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-stone-700 block">Sipariş Gününü Seç:</span>
+                    <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                      {daysMenuList.map(d => {
+                        const isSel = selectedDayKey === d.id;
+                        return (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => setSelectedDayKey(d.id)}
+                            className={`px-2.5 py-1.5 rounded-xl text-center text-xs shrink-0 cursor-pointer border ${
+                              isSel ? 'bg-[#0e3d29] text-[#f7e7ce] font-bold border-[#0e3d29]' : 'bg-white text-stone-700 border-stone-200'
+                            }`}
+                          >
+                            <span className="block font-serif text-[11px]">{d.dayName}</span>
+                            <span className={`block text-[9px] ${isSel ? 'text-amber-300' : 'text-stone-400'}`}>{d.date.slice(0, 5)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Net Sipariş Kartı */}
+                    <div className="p-3 bg-[#0e3d29] text-[#f7e7ce] rounded-2xl space-y-1.5 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-1">
+                        <span className="text-[10px] font-bold text-[#e2991e] uppercase">
+                          ⚡ {currentDayData.dayName} Siparişin ({currentDayData.date}):
+                        </span>
+                        <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">
+                          {selectedTier.name}
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-white">
+                        {[
+                          personalizedPlan[selectedDayKey]?.anaYemek,
+                          personalizedPlan[selectedDayKey]?.corba,
+                          personalizedPlan[selectedDayKey]?.pilav,
+                          personalizedPlan[selectedDayKey]?.salata
+                        ].filter(Boolean).join(' • ')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* EĞER HAFTALIK VEYA AYLIK İSE */}
+                {duration !== 'daily' && (
+                  <div className="p-3 bg-[#0e3d29] text-[#f7e7ce] rounded-2xl space-y-1 text-xs">
+                    <span className="text-[10px] font-bold text-[#e2991e] uppercase block">
+                      {duration === 'monthly' ? '🏆 1 Aylık Düzenli Abonelik' : '📅 1 Haftalık Paket'}
+                    </span>
+                    <div className="text-stone-200 text-[11px]">
+                      Pazartesi - Cumartesi her gün sıcak teslimat. İlk gün: {personalizedPlan['pazartesi']?.anaYemek || 'Günün Menüsü'}.
+                    </div>
+                  </div>
+                )}
 
                 {/* Ödeme Modeli */}
                 <div className="space-y-1.5">
