@@ -19,12 +19,33 @@ body {
   background-color: #fbf9f4;
   color: #1a202c;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Kayan Yazı (Continuous Marquee Ticker) */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: #f1ede4;

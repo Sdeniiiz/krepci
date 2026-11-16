@@ -302,3 +302,122 @@ export const HOW_IT_WORKS = [
     desc: "Toplantın mı var, şehir dışına mı çıkıyorsun? Mobil uygulamadan tek tıkla teslimatını dondur veya gününü kaydır."
   }
 ];
+
+
+// İstenmeyen / Sevilmeyen Malzemeler Listesi (Kara Liste / Alerjen / Tercih)
+export const DISLIKED_INGREDIENTS = [
+  { id: "bamya", label: "Bamya", icon: "🌱", keywords: ["bamya"] },
+  { id: "kereviz", label: "Kereviz", icon: "🌿", keywords: ["kereviz"] },
+  { id: "pirasa", label: "Pırasa", icon: "🥬", keywords: ["pırasa", "pirasa"] },
+  { id: "ciger", label: "Arnavut Ciğeri / Sakatat", icon: "🥩", keywords: ["ciğer", "ciger"] },
+  { id: "mantar", label: "Mantar", icon: "🍄", keywords: ["mantar"] },
+  { id: "patlican", label: "Patlıcan", icon: "🍆", keywords: ["patlıcan", "patlican", "musakka", "karnıyarık"] },
+  { id: "ispanak", label: "Ispanak", icon: "🥗", keywords: ["ıspanak", "ispanak", "borani"] },
+  { id: "brokoli", label: "Brokoli", icon: "🥦", keywords: ["brokoli"] },
+  { id: "bakliyat", label: "Kuru Fasulye / Nohut", icon: "🫘", keywords: ["kurufasulye", "nohut", "börülce", "borulce"] },
+  { id: "keskek", label: "Keşkek", icon: "🍲", keywords: ["keşkek", "keskek"] }
+];
+
+// Damak Zevki Profilleri (Soft Onboarding İçin)
+export const TASTE_PROFILES = [
+  {
+    id: "dengeli",
+    title: "Dengeli Anne Eli Sofrası",
+    desc: "Her gün et, tavuk ve taze sebzenin en uyumlu dengesi",
+    emoji: "🍲",
+    badge: "En Popüler"
+  },
+  {
+    id: "et-sever",
+    title: "Et & Kıymalı Sever",
+    desc: "Kavurma, köfte, kıymalı tencere ve kebap ağırlıklı menü",
+    emoji: "🥩",
+    badge: "Doyurucu"
+  },
+  {
+    id: "tavuk-sever",
+    title: "Tavuk & Protein Ağırlıklı",
+    desc: "Fırında tavuk tandır, tavuk şiş, çıtır tavuk ve tas kebabı",
+    emoji: "🍗",
+    badge: "Yüksek Protein"
+  },
+  {
+    id: "hafif-sebze",
+    title: "Hafif & Zeytinyağlı Seven",
+    desc: "Mideyi yormayan taze zeytinyağlılar ve hafif mezeler",
+    emoji: "🌿",
+    badge: "Mide Dostu"
+  }
+];
+
+// Kişiselleştirilmiş Menü Üretim Motoru
+export function generatePersonalizedPlan(profileId = "dengeli", dislikedList = []) {
+  const plan = {};
+
+  const isDishExcluded = (dishName) => {
+    if (!dishName) return false;
+    const lower = dishName.toLowerCase();
+    return dislikedList.some(dislikedId => {
+      const item = DISLIKED_INGREDIENTS.find(i => i.id === dislikedId);
+      if (!item) return false;
+      return item.keywords.some(kw => lower.includes(kw));
+    });
+  };
+
+  DAYS_MENU.forEach((day) => {
+    // 1. Çorba seçimi
+    const availableCorbalar = day.corbalar.filter(c => !isDishExcluded(c));
+    const chosenCorba = availableCorbalar.length > 0 ? availableCorbalar[0] : day.corbalar[0];
+
+    // 2. Ana yemek seçimi (Profil ve istenmeyen filtreli)
+    let availableAnaYemekler = day.anaYemekler.filter(m => !isDishExcluded(m));
+
+    if (profileId === "et-sever") {
+      const etli = availableAnaYemekler.filter(m => 
+        m.toLowerCase().includes("etli") || 
+        m.toLowerCase().includes("kıymalı") || 
+        m.toLowerCase().includes("yağlama") || 
+        m.toLowerCase().includes("kebap") ||
+        m.toLowerCase().includes("musakka")
+      );
+      if (etli.length > 0) availableAnaYemekler = etli;
+    } else if (profileId === "tavuk-sever") {
+      const tavuklu = availableAnaYemekler.filter(m => 
+        m.toLowerCase().includes("tavuk") || 
+        m.toLowerCase().includes("baget")
+      );
+      if (tavuklu.length > 0) availableAnaYemekler = tavuklu;
+    } else if (profileId === "hafif-sebze") {
+      const sebzeli = availableAnaYemekler.filter(m => 
+        m.toLowerCase().includes("zeytinyağlı") || 
+        m.toLowerCase().includes("fasulye") || 
+        m.toLowerCase().includes("türlü") ||
+        m.toLowerCase().includes("krep")
+      );
+      if (sebzeli.length > 0) availableAnaYemekler = sebzeli;
+    }
+
+    const chosenAnaYemek = availableAnaYemekler.length > 0 ? availableAnaYemekler[0] : day.anaYemekler.find(m => !isDishExcluded(m)) || day.anaYemekler[0];
+
+    // 3. Pilav / Makarna seçimi
+    const availablePilav = day.pilavMakarna.filter(p => !isDishExcluded(p));
+    const chosenPilav = availablePilav.length > 0 ? availablePilav[0] : day.pilavMakarna[0];
+
+    // 4. Salata / Meze seçimi
+    const availableSalata = day.salataMeze.filter(s => !isDishExcluded(s));
+    const chosenSalata = availableSalata.length > 0 ? availableSalata[0] : day.salataMeze[0];
+
+    plan[day.id] = {
+      dayName: day.dayName,
+      date: day.date,
+      corba: chosenCorba,
+      anaYemek: chosenAnaYemek,
+      pilav: chosenPilav,
+      salata: chosenSalata,
+      tatli: (day.tatli && day.tatli[0]) || "Islak Kek",
+      excludedCount: day.anaYemekler.length - day.anaYemekler.filter(m => !isDishExcluded(m)).length
+    };
+  });
+
+  return plan;
+}

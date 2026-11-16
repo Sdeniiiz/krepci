@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
-import { PRICING_TIERS, DAYS_MENU, BRAND_INFO } from '../data/menuData';
+import { 
+  PRICING_TIERS, DAYS_MENU, BRAND_INFO, 
+  DISLIKED_INGREDIENTS, TASTE_PROFILES, generatePersonalizedPlan 
+} from '../data/menuData';
 import { 
   Check, ArrowRight, ArrowLeft, Clock, MapPin, 
-  CreditCard, Banknote, Sparkles, ChefHat, ShieldCheck
+  CreditCard, Banknote, Sparkles, ChefHat, ShieldCheck, 
+  Ban, ThumbsUp, RefreshCw, AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function SubscriptionPlanner({ onCompleteSubscription }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Porsiyon, 2: Süre & Ödeme, 3: Damak & Kara Liste, 4: Menü İnceleme, 5: Teslimat
   const [selectedTier, setSelectedTier] = useState(PRICING_TIERS[2]); // 3 Çeşit
   const [duration, setDuration] = useState('monthly'); // 'monthly' | 'weekly' | 'daily'
   const [paymentMethod, setPaymentMethod] = useState('online-card'); // 'online-card' | 'cod-daily'
+  
+  // Damak Zevki ve İstemediğim Yiyecekler (Aylık abonelik konforu)
+  const [selectedProfile, setSelectedProfile] = useState('dengeli');
+  const [dislikedList, setDislikedList] = useState([]);
+  const [customExcludedText, setCustomExcludedText] = useState('');
 
   const [deliveryInfo, setDeliveryInfo] = useState({
     fullName: '',
@@ -20,21 +29,26 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
     notes: ''
   });
 
-  // Kullanıcının kişisel yemek programı
-  const initialSchedule = DAYS_MENU.reduce((acc, day) => {
-    acc[day.id] = {
-      dayName: day.dayName,
-      date: day.date,
-      corba: day.corbalar[0] || '',
-      anaYemek: day.anaYemekler[0] || '',
-      pilav: day.pilavMakarna[0] || '',
-      salata: day.salataMeze[0] || '',
-      tatli: (day.tatli && day.tatli[0]) || 'Islak Kek'
-    };
-    return acc;
-  }, {});
+  // İstenmeyen yiyecekleri toggle etme
+  const toggleDisliked = (id) => {
+    setDislikedList(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      // Otomatik yeni plan oluştur
+      const newPlan = generatePersonalizedPlan(selectedProfile, next);
+      setUserSchedule(newPlan);
+      return next;
+    });
+  };
 
-  const [userSchedule, setUserSchedule] = useState(initialSchedule);
+  // Profil değiştiğinde
+  const handleProfileChange = (profId) => {
+    setSelectedProfile(profId);
+    const newPlan = generatePersonalizedPlan(profId, dislikedList);
+    setUserSchedule(newPlan);
+  };
+
+  // Kullanıcının kişisel yemek programı (başlangıçta akıllı motor ile üretilir)
+  const [userSchedule, setUserSchedule] = useState(() => generatePersonalizedPlan('dengeli', []));
   const [activeDayKey, setActiveDayKey] = useState('pazartesi');
 
   // Fiyat Hesaplama
@@ -65,22 +79,6 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
     }));
   };
 
-  const handleAutoFillBalanced = () => {
-    const balanced = {};
-    DAYS_MENU.forEach((day, i) => {
-      balanced[day.id] = {
-        dayName: day.dayName,
-        date: day.date,
-        corba: day.corbalar[i % day.corbalar.length] || day.corbalar[0],
-        anaYemek: day.anaYemekler[i % day.anaYemekler.length] || day.anaYemekler[0],
-        pilav: day.pilavMakarna[i % day.pilavMakarna.length] || day.pilavMakarna[0],
-        salata: day.salataMeze[i % day.salataMeze.length] || day.salataMeze[0],
-        tatli: (day.tatli && day.tatli[0]) || 'Islak Kek'
-      };
-    });
-    setUserSchedule(balanced);
-  };
-
   const handleFinish = (e) => {
     e.preventDefault();
     try {
@@ -92,7 +90,11 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
       duration,
       daysCount,
       paymentMethod,
-      deliveryInfo,
+      deliveryInfo: {
+        ...deliveryInfo,
+        notes: `${deliveryInfo.notes}${dislikedList.length > 0 ? ` (İstenmeyenler: ${dislikedList.join(', ')})` : ''}${customExcludedText ? ` (Özel Not: ${customExcludedText})` : ''}`
+      },
+      dislikedIngredients: dislikedList,
       schedule: userSchedule,
       totalAmount: finalTotal,
       perDayPrice: perDayEffective,
@@ -103,34 +105,46 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
 
   const currentDayData = DAYS_MENU.find(d => d.id === activeDayKey) || DAYS_MENU[0];
 
+  // Bir yemeğin elenip elenmediğini kontrol
+  const isDishExcluded = (dishName) => {
+    if (!dishName) return false;
+    const lower = dishName.toLowerCase();
+    return dislikedList.some(dislikedId => {
+      const item = DISLIKED_INGREDIENTS.find(i => i.id === dislikedId);
+      if (!item) return false;
+      return item.keywords.some(kw => lower.includes(kw));
+    });
+  };
+
   return (
-    <div id="subscription-planner" className="py-16 bg-[#faf7f2] border-b border-stone-200">
+    <div id="subscription-planner" className="py-12 sm:py-16 bg-[#faf7f2] border-b border-stone-200">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         
         {/* Üst Bilgi (Editoryal & Temiz) */}
-        <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+        <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
           <span className="text-xs font-bold tracking-[0.2em] text-[#0e3d29] uppercase">
-            The Perfect Plate Konsepti
+            The Perfect Plate & Krepçi Sistemi
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#0e3d29]">
             Kendi Yemek Programını Oluştur
           </h2>
-          <p className="text-stone-600 text-sm">
-            Menünüzü damak tadınıza göre belirleyin, her gün sıcacık kapınıza getirelim.
+          <p className="text-stone-600 text-xs sm:text-sm">
+            İstemediğiniz yemekleri çıkarın, sevdiğiniz lezzetlerle dolu aylık veya günlük menünüzü hazırlayalım.
           </p>
 
-          {/* Zarif İlerleme Metinleri (Kaba butonlar yok) */}
-          <div className="pt-6 flex items-center justify-center gap-6 sm:gap-10 text-xs font-medium border-b border-stone-200 pb-4">
+          {/* Zarif İlerleme Metinleri (Responsive) */}
+          <div className="pt-6 flex items-center justify-between sm:justify-center gap-2 sm:gap-8 text-[11px] sm:text-xs font-medium border-b border-stone-200 pb-3 overflow-x-auto no-scrollbar">
             {[
               { num: 1, title: '1. Porsiyon' },
               { num: 2, title: '2. Süre & Ödeme' },
-              { num: 3, title: '3. Menü Tercihi' },
-              { num: 4, title: '4. Teslimat' }
+              { num: 3, title: '3. İstenmeyenler' },
+              { num: 4, title: '4. Menü Takvimi' },
+              { num: 5, title: '5. Teslimat' }
             ].map(s => (
               <button
                 key={s.num}
                 onClick={() => s.num < step && setStep(s.num)}
-                className={`pb-1 transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`pb-1 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap ${
                   step === s.num
                     ? 'text-[#0e3d29] font-bold border-b-2 border-[#0e3d29]'
                     : step > s.num
@@ -145,7 +159,7 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
           </div>
         </div>
 
-        {/* ===================== ADIM 1: PORSIYON SEÇIMI (Zarif Liste Düzeni) ===================== */}
+        {/* ===================== ADIM 1: PORSİYON SEÇİMİ ===================== */}
         {step === 1 && (
           <div className="space-y-6">
             <div className="flex items-baseline justify-between border-b border-stone-200 pb-3">
@@ -155,7 +169,6 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               <span className="text-xs text-stone-500">Günlük kaç çeşit tercih edersiniz?</span>
             </div>
 
-            {/* Kutu yığını yerine: The Perfect Plate tarzı ferah yatay liste */}
             <div className="divide-y divide-stone-200">
               {PRICING_TIERS.map((tier) => {
                 const isSelected = selectedTier.id === tier.id;
@@ -168,7 +181,6 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                     }`}
                   >
                     <div className="flex items-start gap-4">
-                      {/* Minimalist Radio */}
                       <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 transition-all ${
                         isSelected ? 'border-[#0e3d29] bg-[#0e3d29]' : 'border-stone-400 group-hover:border-[#0e3d29]'
                       }`}>
@@ -217,14 +229,13 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
           </div>
         )}
 
-        {/* ===================== ADIM 2: SÜRE & ÖDEME MODELİ (Akıcı & Sade) ===================== */}
+        {/* ===================== ADIM 2: SÜRE & ÖDEME MODELİ ===================== */}
         {step === 2 && (
-          <div className="space-y-10">
-            {/* Süre Tercihi */}
+          <div className="space-y-8">
             <div className="space-y-4">
               <div className="border-b border-stone-200 pb-2">
                 <h3 className="font-serif text-xl font-bold text-[#0e3d29]">1. Abonelik Süreniz</h3>
-                <p className="text-xs text-stone-500">Ne kadarlık bir program planlamak istersiniz?</p>
+                <p className="text-xs text-stone-500">Aylık programlarda sevmediğiniz yemekler elenir, bütçe tasarrufu sağlanır.</p>
               </div>
 
               <div className="space-y-3">
@@ -284,7 +295,6 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               </div>
             </div>
 
-            {/* Ödeme Modeli (Kararsız kullanıcı için net 2 seçenek) */}
             <div className="space-y-4">
               <div className="border-b border-stone-200 pb-2">
                 <h3 className="font-serif text-xl font-bold text-[#0e3d29]">2. Ödeme Tercihiniz</h3>
@@ -340,46 +350,175 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               </div>
             </div>
 
-            {/* Alt Gezinme */}
             <div className="pt-4 flex justify-between items-center border-t border-stone-200">
               <button
                 onClick={() => setStep(1)}
-                className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1"
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
               >
                 <ArrowLeft size={14} />
                 <span>Porsiyona Dön</span>
               </button>
               <button
                 onClick={() => setStep(3)}
-                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2"
+                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span>İlerle: Menü Tercihini Belirle</span>
+                <span>İlerle: İstemediğin Yiyecekleri Belirle</span>
                 <ArrowRight size={16} className="text-[#e2991e]" />
               </button>
             </div>
           </div>
         )}
 
-        {/* ===================== ADIM 3: MENÜ TERCIHI (The Perfect Plate Usulü Tabak Doldurma) ===================== */}
+        {/* ===================== ADIM 3: İSTEMEDİĞİM YİYECEKLER & DAMAK PROFİLİ ===================== */}
         {step === 3 && (
+          <div className="space-y-8">
+            <div className="border-b border-stone-200 pb-3">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
+                <Ban size={14} />
+                <span>Kişiselleştirilmiş Menü Filtresi</span>
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-[#0e3d29]">
+                Tabağınızda Asla Görmek İstemediğiniz Yiyecekler
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                Aylık paketiniz boyunca burada seçtiğiniz malzemeler menünüzden otomatik çıkarılacak ve yerlerine günün alternatif lezzetli tencere yemekleri atanacaktır.
+              </p>
+            </div>
+
+            {/* 1. Damak Tercihi (Soft Seçim) */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
+                1. Genel Damak Zevkiniz
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {TASTE_PROFILES.map(prof => {
+                  const isSel = selectedProfile === prof.id;
+                  return (
+                    <div
+                      key={prof.id}
+                      onClick={() => handleProfileChange(prof.id)}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                        isSel
+                          ? 'border-[#0e3d29] bg-white shadow-xs ring-1 ring-[#0e3d29]'
+                          : 'border-stone-200 hover:bg-white/60 bg-[#fbf9f4]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{prof.emoji}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-serif font-bold text-xs sm:text-sm text-stone-900">{prof.title}</span>
+                          </div>
+                          <p className="text-[11px] text-stone-500 leading-snug">{prof.desc}</p>
+                        </div>
+                      </div>
+                      {isSel && <Check size={16} className="text-[#0e3d29] shrink-0" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. İstenmeyen Yiyecekler / Kara Liste (Chip Seçiciler) */}
+            <div className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
+                  2. Çıkarmak İstediğiniz Malzemeler (Dokunarak Seçin)
+                </label>
+                <span className="text-[11px] text-stone-400">
+                  {dislikedList.length > 0 ? `${dislikedList.length} malzeme elendi` : 'Tüm yemekleri yerim'}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {DISLIKED_INGREDIENTS.map(item => {
+                  const isExcluded = dislikedList.includes(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => toggleDisliked(item.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                        isExcluded
+                          ? 'bg-rose-50 border-rose-300 text-rose-900 shadow-2xs'
+                          : 'bg-white border-stone-200 text-stone-700 hover:border-stone-300 hover:bg-stone-50'
+                      }`}
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                      {isExcluded ? (
+                        <span className="text-rose-600 font-bold ml-1">✕</span>
+                      ) : (
+                        <span className="text-stone-300 text-[10px] ml-0.5">+</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Özel İstenmeyen Notu */}
+              <div className="pt-2">
+                <input
+                  type="text"
+                  placeholder="Başka istemediğiniz bir malzeme var mı? (Örn: dereotu, acı biber, sarımsak...)"
+                  value={customExcludedText}
+                  onChange={e => setCustomExcludedText(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs bg-white focus:outline-hidden focus:border-[#0e3d29]"
+                />
+              </div>
+
+              {/* Akıllı Bilgilendirme Kutusu */}
+              {dislikedList.length > 0 && (
+                <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5">
+                  <ShieldCheck size={18} className="text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Mükemmel! Menünüz filtrelendi.</strong>
+                    <p className="text-[11px] text-emerald-800 mt-0.5">
+                      Seçtiğiniz <strong>{dislikedList.map(id => DISLIKED_INGREDIENTS.find(i => i.id === id)?.label).join(', ')}</strong> menünüzden çıkarıldı. O günlerde size özel alternatif lezzetler servis edilecektir.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Alt Gezinme */}
+            <div className="pt-4 flex justify-between items-center border-t border-stone-200">
+              <button
+                onClick={() => setStep(2)}
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
+              >
+                <ArrowLeft size={14} />
+                <span>Ödemeye Dön</span>
+              </button>
+              <button
+                onClick={() => setStep(4)}
+                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>Filtrelenmiş Menümü İncele</span>
+                <ArrowRight size={16} className="text-[#e2991e]" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== ADIM 4: FİLTRELENMİŞ MENÜ TAKVİMİ ===================== */}
+        {step === 4 && (
           <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-3">
               <div>
                 <h3 className="font-serif text-xl font-bold text-[#0e3d29]">
-                  Haftalık Yemek Tercihleriniz
+                  Kişiselleştirilmiş Haftalık Menünüz
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Her gün için istediğiniz çorba, ana yemek ve garnitürü seçin.
+                  İstemediğiniz yemekler çıkarılarak size özel oluşturulmuş haftalık sofra.
                 </p>
               </div>
 
-              <button
-                onClick={handleAutoFillBalanced}
-                className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1.5 underline underline-offset-4 self-start sm:self-auto cursor-pointer"
-              >
-                <Sparkles size={14} />
-                <span>Şefin Dengeli Ev Yemeği Menüsünü Otomatik Yükle</span>
-              </button>
+              {dislikedList.length > 0 && (
+                <div className="text-[11px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+                  🛡️ {dislikedList.length} malzeme filtrelendi
+                </div>
+              )}
             </div>
 
             {/* Gün Seçici İnce Sekmeler */}
@@ -402,10 +541,10 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               })}
             </div>
 
-            {/* Seçili Günün Seçenekleri (Kare kutular yerine: Restaurant Menu listesi) */}
+            {/* Seçili Günün Seçenekleri */}
             <div className="space-y-6">
               
-              {/* Çorba Seçimi */}
+              {/* Çorba */}
               <div className="space-y-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
                   1. Çorba Seçimi
@@ -413,23 +552,30 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                 <div className="divide-y divide-stone-100 bg-white/70 rounded-2xl p-3 border border-stone-200">
                   {currentDayData.corbalar.map((corba) => {
                     const isSelected = userSchedule[activeDayKey]?.corba === corba;
+                    const excluded = isDishExcluded(corba);
                     return (
                       <div
                         key={corba}
-                        onClick={() => handleItemSelect(activeDayKey, 'corba', corba)}
-                        className={`py-2 px-2 flex items-center justify-between cursor-pointer rounded-lg transition-colors ${
-                          isSelected ? 'bg-amber-50 text-[#0e3d29] font-bold' : 'hover:bg-stone-50 text-stone-700'
+                        onClick={() => !excluded && handleItemSelect(activeDayKey, 'corba', corba)}
+                        className={`py-2 px-2 flex items-center justify-between rounded-lg transition-colors ${
+                          excluded 
+                            ? 'opacity-40 cursor-not-allowed text-stone-400 bg-stone-50' 
+                            : isSelected 
+                            ? 'bg-amber-50 text-[#0e3d29] font-bold cursor-pointer' 
+                            : 'hover:bg-stone-50 text-stone-700 cursor-pointer'
                         }`}
                       >
-                        <span className="text-xs sm:text-sm">{corba}</span>
-                        {isSelected ? <Check size={14} className="text-[#0e3d29]" /> : <span className="text-stone-300 text-xs">+ Seç</span>}
+                        <span className="text-xs sm:text-sm">
+                          {corba} {excluded && '(Tercihiniz: Elendi)'}
+                        </span>
+                        {isSelected && !excluded && <Check size={14} className="text-[#0e3d29]" />}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Ana Yemek Seçimi */}
+              {/* Ana Yemek */}
               <div className="space-y-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
                   2. Ana Yemek Seçimi
@@ -437,23 +583,30 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                 <div className="divide-y divide-stone-100 bg-white/70 rounded-2xl p-3 border border-stone-200">
                   {currentDayData.anaYemekler.map((yemek) => {
                     const isSelected = userSchedule[activeDayKey]?.anaYemek === yemek;
+                    const excluded = isDishExcluded(yemek);
                     return (
                       <div
                         key={yemek}
-                        onClick={() => handleItemSelect(activeDayKey, 'anaYemek', yemek)}
-                        className={`py-2 px-2 flex items-center justify-between cursor-pointer rounded-lg transition-colors ${
-                          isSelected ? 'bg-amber-50 text-[#0e3d29] font-bold' : 'hover:bg-stone-50 text-stone-700'
+                        onClick={() => !excluded && handleItemSelect(activeDayKey, 'anaYemek', yemek)}
+                        className={`py-2 px-2 flex items-center justify-between rounded-lg transition-colors ${
+                          excluded 
+                            ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-50' 
+                            : isSelected 
+                            ? 'bg-amber-50 text-[#0e3d29] font-bold cursor-pointer' 
+                            : 'hover:bg-stone-50 text-stone-700 cursor-pointer'
                         }`}
                       >
-                        <span className="text-xs sm:text-sm">{yemek}</span>
-                        {isSelected ? <Check size={14} className="text-[#0e3d29]" /> : <span className="text-stone-300 text-xs">+ Seç</span>}
+                        <span className="text-xs sm:text-sm">
+                          {yemek} {excluded && '(İstemediğiniz Malzeme İçeriyor)'}
+                        </span>
+                        {isSelected && !excluded && <Check size={14} className="text-[#0e3d29]" />}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Pilav & Garnitür */}
+              {/* Pilav & Salata */}
               <div className="space-y-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#0e3d29] block">
                   3. Pilav / Makarna & Meze Seçimi
@@ -499,7 +652,7 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                 </div>
               </div>
 
-              {/* Seçili Gün Tabağı Özeti (Zarif İnce Şerit) */}
+              {/* Seçili Gün Tabağı Özeti */}
               <div className="p-4 bg-[#0e3d29] text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
                 <div>
                   <span className="text-[#e2991e] font-bold uppercase tracking-wider block text-[10px]">
@@ -509,7 +662,7 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                     {userSchedule[activeDayKey]?.corba} • {userSchedule[activeDayKey]?.anaYemek} • {userSchedule[activeDayKey]?.pilav} • {userSchedule[activeDayKey]?.salata}
                   </span>
                 </div>
-                <span className="text-[11px] text-stone-300">Her gün taze hazırlanır</span>
+                <span className="text-[11px] text-emerald-300 font-semibold">✓ Size Özel Filtrelendi</span>
               </div>
 
             </div>
@@ -517,15 +670,15 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
             {/* Alt Gezinme */}
             <div className="pt-4 flex justify-between items-center border-t border-stone-200">
               <button
-                onClick={() => setStep(2)}
-                className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1"
+                onClick={() => setStep(3)}
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center gap-1 cursor-pointer"
               >
                 <ArrowLeft size={14} />
-                <span>Ödemeye Dön</span>
+                <span>Filtrelere Dön</span>
               </button>
               <button
-                onClick={() => setStep(4)}
-                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2"
+                onClick={() => setStep(5)}
+                className="px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
               >
                 <span>İlerle: Teslimat ve Onay</span>
                 <ArrowRight size={16} className="text-[#e2991e]" />
@@ -534,8 +687,8 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
           </div>
         )}
 
-        {/* ===================== ADIM 4: TESLIMAT VE ONAY ===================== */}
-        {step === 4 && (
+        {/* ===================== ADIM 5: TESLİMAT VE ONAY ===================== */}
+        {step === 5 && (
           <form onSubmit={handleFinish} className="space-y-6">
             <div className="border-b border-stone-200 pb-2">
               <h3 className="font-serif text-xl font-bold text-[#0e3d29]">Teslimat Bilgileriniz</h3>
@@ -605,7 +758,7 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Aşçıya veya Kuryeye Not</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Aşçıya veya Kuryeye Özel Not</label>
                 <input
                   type="text"
                   placeholder="Örn: Az tuzlu rica ederim / Kapıda zile basmayın"
@@ -624,15 +777,29 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                 <span className="text-xs text-stone-500 block">
                   {paymentMethod === 'online-card' ? 'Online Güvenli Ödeme' : 'Her gün kapıda nakit/POS ile'}
                 </span>
+                {dislikedList.length > 0 && (
+                  <span className="text-[11px] text-emerald-800 font-semibold block mt-0.5">
+                    ✓ {dislikedList.length} adet istemediğiniz malzeme paketten çıkarıldı
+                  </span>
+                )}
               </div>
 
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-10 py-4 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Yemek Programımı Kaydet & Başlat</span>
-                <ArrowRight size={16} className="text-[#e2991e]" />
-              </button>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  className="text-xs font-bold text-stone-600 hover:text-stone-900 px-4 py-2"
+                >
+                  Geri
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 sm:flex-none px-10 py-4 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Yemek Programımı Kaydet & Başlat</span>
+                  <ArrowRight size={16} className="text-[#e2991e]" />
+                </button>
+              </div>
             </div>
           </form>
         )}
