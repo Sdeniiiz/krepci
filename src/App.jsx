@@ -151,6 +151,7 @@ export default function App() {
               weekRange={menuWeekRange}
               onSelectDayForPlan={handleSelectDayForPlan}
               onQuickOrderDay={handleQuickOrderDay}
+              onDayChanged={(dayId) => setPlannerInitialDay(dayId)}
             />
             
             {/* ANASAYFADA DAİMA GÖRÜNÜR YEMEK PROGRAMI VE SİPARİŞ SİHİRBAZI */}

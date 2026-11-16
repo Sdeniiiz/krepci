@@ -921,10 +921,22 @@ export default function MobileSimulator({ isOpen, onClose, customMenu }) {
                   Damak tercihlerine uygun olarak usta aşçılarımız her sabah senin için pişirecek.
                 </p>
 
-                <div className="p-3.5 bg-white rounded-2xl border border-stone-200 text-left text-xs space-y-1 text-stone-700">
-                  <div>Paket: <strong>{selectedTier.name} ({duration === 'monthly' ? 'Aylık' : 'Günlük'})</strong></div>
-                  <div>Ödeme: <strong>{paymentMethod === 'cod-daily' ? 'Kapıda Ödeme' : 'Online Kart'}</strong></div>
-                  <div>Teslimat: <strong>{delivery.timeSlot}</strong></div>
+                <div className="p-3.5 bg-white rounded-2xl border border-stone-200 text-left text-xs space-y-2 text-stone-700">
+                  <div className="flex items-center justify-between border-b pb-1.5">
+                    <span className="font-bold text-[#0e3d29]">📅 {duration === 'daily' ? `${currentDayData.dayName} (${currentDayData.date})` : 'Haftalık / Aylık Paket'}</span>
+                    <span className="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full text-[10px]">{selectedTier.name}</span>
+                  </div>
+                  <div className="bg-stone-50 p-2 rounded-xl text-stone-900 font-medium">
+                    <span className="text-[10px] text-stone-400 block font-bold">SEÇİLEN YEMEKLER:</span>
+                    {[
+                      personalizedPlan[selectedDayKey]?.anaYemek,
+                      personalizedPlan[selectedDayKey]?.corba,
+                      personalizedPlan[selectedDayKey]?.pilav,
+                      personalizedPlan[selectedDayKey]?.salata
+                    ].filter(Boolean).join(' • ')}
+                  </div>
+                  <div className="text-[11px]">Ödeme: <strong>{paymentMethod === 'cod-daily' ? 'Kapıda Ödeme' : 'Online Kart'}</strong></div>
+                  <div className="text-[11px]">Teslimat Saati: <strong>{delivery.timeSlot}</strong></div>
                   {dislikedList.length > 0 && (
                     <div className="text-emerald-800 text-[11px] pt-1 border-t">
                       ✓ {dislikedList.length} adet istemediğin malzeme menünden çıkarıldı.
@@ -951,13 +963,13 @@ export default function MobileSimulator({ isOpen, onClose, customMenu }) {
                 <h4 className="font-serif font-bold text-base text-[#0e3d29]">Bugünkü Yemeğin Hazırlanıyor</h4>
                 <p className="text-xs text-stone-500">Tahmini Teslimat: 12:15 - 12:30</p>
                 <div className="text-left text-xs text-stone-700 border-t border-b border-stone-200 py-3 space-y-1 bg-white p-3 rounded-xl">
-                  <div className="font-serif font-bold text-stone-900">Pazartesi Menün:</div>
+                  <div className="font-serif font-bold text-stone-900">{currentDayData.dayName} Menün:</div>
                   <div>
                     {[
-                      personalizedPlan.pazartesi.anaYemek,
-                      personalizedPlan.pazartesi.corba,
-                      personalizedPlan.pazartesi.pilav,
-                      personalizedPlan.pazartesi.salata
+                      personalizedPlan[selectedDayKey]?.anaYemek,
+                      personalizedPlan[selectedDayKey]?.corba,
+                      personalizedPlan[selectedDayKey]?.pilav,
+                      personalizedPlan[selectedDayKey]?.salata
                     ].filter(Boolean).join(' • ')}
                   </div>
                   <div className="text-[11px] text-amber-800 font-semibold pt-1">

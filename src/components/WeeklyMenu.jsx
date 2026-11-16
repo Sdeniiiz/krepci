@@ -2,10 +2,15 @@ import React, { useState } from 'react';
 import { DAYS_MENU } from '../data/menuData';
 import { Calendar, Plus, ShoppingCart, Sparkles, ArrowRight } from 'lucide-react';
 
-export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay, menuList = DAYS_MENU, weekRange = '09 - 14 Kasım 2026' }) {
+export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay, onDayChanged, menuList = DAYS_MENU, weekRange = '09 - 14 Kasım 2026' }) {
   const currentMenu = menuList && menuList.length > 0 ? menuList : DAYS_MENU;
   const [selectedDayId, setSelectedDayId] = useState('pazartesi');
   const activeDay = currentMenu.find(d => d.id === selectedDayId) || currentMenu[0];
+
+  const handleDaySelect = (dayId) => {
+    setSelectedDayId(dayId);
+    if (onDayChanged) onDayChanged(dayId);
+  };
 
   return (
     <section id="weekly-menu" className="py-20 bg-[#faf7f2] border-b border-stone-200">
@@ -27,14 +32,14 @@ export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay, menuLi
         </div>
 
         {/* Gün Seçici (Kutu değil, The Perfect Plate usulü zarif editoryal çizgi) */}
-        <div className="flex justify-center border-b border-stone-300 mb-12 overflow-x-auto no-scrollbar">
+        <div className="flex justify-center border-b border-stone-300 mb-8 overflow-x-auto no-scrollbar">
           <div className="flex gap-4 sm:gap-8 min-w-max pb-px">
             {currentMenu.map((day) => {
               const isActive = day.id === selectedDayId;
               return (
                 <button
                   key={day.id}
-                  onClick={() => setSelectedDayId(day.id)}
+                  onClick={() => handleDaySelect(day.id)}
                   className={`pb-4 px-2 text-sm sm:text-base font-serif transition-all relative flex flex-col items-center cursor-pointer ${
                     isActive
                       ? 'text-[#0e3d29] font-bold'
@@ -51,6 +56,34 @@ export default function WeeklyMenu({ onSelectDayForPlan, onQuickOrderDay, menuLi
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* SEÇİLEN GÜN VE MENÜ VURGUSU (ANINDA GÖRÜNÜR BİLGİLENDİRME) */}
+        <div className="mb-10 p-4 sm:p-5 rounded-3xl bg-white border-2 border-[#0e3d29] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#0e3d29]">
+                Seçtiğiniz Gün: <strong className="text-stone-950 font-serif text-sm">{activeDay.dayName} ({activeDay.date})</strong>
+              </span>
+            </div>
+            <div className="text-xs sm:text-sm text-stone-700 flex flex-wrap items-center gap-1.5">
+              <span className="font-serif font-bold text-[#0e3d29]">Menü Seçenekleri:</span>
+              <span className="bg-stone-100 px-2.5 py-0.5 rounded-lg text-stone-800">🍵 {activeDay.corbalar[0]}</span>
+              <span className="bg-amber-50 px-2.5 py-0.5 rounded-lg font-bold text-[#0e3d29] border border-amber-200">🥘 {activeDay.anaYemekler[0]}</span>
+              <span className="bg-stone-100 px-2.5 py-0.5 rounded-lg text-stone-800">🍚 {activeDay.pilavMakarna[0]}</span>
+              <span className="bg-stone-100 px-2.5 py-0.5 rounded-lg text-stone-800">🥗 {activeDay.salataMeze[0]}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              onClick={() => onSelectDayForPlan(activeDay)}
+              className="w-full sm:w-auto px-6 py-3 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+            >
+              <span>{activeDay.dayName} Menüsüyle Siparişe Başla</span>
+              <ArrowRight size={14} className="text-[#e2991e]" />
+            </button>
           </div>
         </div>
 

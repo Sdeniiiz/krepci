@@ -4,6 +4,10 @@ import { DAYS_MENU } from '../data/menuData';
 
 export default function CustomerDashboard({ activeSubscription, onNewPlan }) {
   const [isPaused, setIsPaused] = useState(false);
+  const targetDayKey = activeSubscription?.targetDayKey || 'pazartesi';
+  const targetDayData = DAYS_MENU.find(d => d.id === targetDayKey) || DAYS_MENU[0];
+  const isDaily = activeSubscription?.duration === 'daily';
+
   const [schedule] = useState(
     activeSubscription?.schedule || {
       pazartesi: { corba: 'Mercimek Çorbası', anaYemek: 'Krepçi Yağlama', pilav: 'Pirinç Pilavı', salata: 'Mevsim Salata' },
@@ -14,6 +18,8 @@ export default function CustomerDashboard({ activeSubscription, onNewPlan }) {
       cumartesi: { corba: 'Brokoli Çorbası', anaYemek: 'Kıymalı Krep', pilav: 'Domatesli Bulgur Pilavı', salata: 'Cacık' }
     }
   );
+
+  const targetMeal = activeSubscription?.selectedMeal || schedule[targetDayKey] || schedule['pazartesi'];
 
   return (
     <div className="py-16 bg-[#faf7f2] min-h-screen border-b border-stone-200">
@@ -51,27 +57,33 @@ export default function CustomerDashboard({ activeSubscription, onNewPlan }) {
         </div>
 
         {/* Bugünün Sıcak Yemeği - Akıcı Şerit */}
-        <div className="bg-white rounded-2xl p-6 border border-stone-200 space-y-4">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-[#0e3d29] shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-3">
             <div>
-              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">Bugünkü Menünüz (Pazartesi)</span>
-              <h3 className="font-serif text-xl font-bold text-[#0e3d29]">Mutfakta Taze Pişiriliyor</h3>
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">
+                {isDaily 
+                  ? `⚡ TEK GÜNLÜK SİPARİŞİNİZ: ${activeSubscription?.targetDayName || targetDayData.dayName} (${activeSubscription?.targetDate || targetDayData.date})`
+                  : `Seçili Menünüz (${targetDayData.dayName})`}
+              </span>
+              <h3 className="font-serif text-2xl font-bold text-[#0e3d29]">
+                {isDaily ? `${targetDayData.dayName} Günü İçin Mutfakta Pişiriliyor` : 'Mutfakta Taze Pişiriliyor'}
+              </h3>
             </div>
-            <span className="text-xs text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full font-bold">
+            <span className="text-xs text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full font-bold self-start sm:self-auto border border-emerald-200">
               Kurye Çıkış Saati: ~11:45
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-stone-800 font-medium">
-            <span className="py-1 px-3 bg-stone-50 rounded-full">🍵 {schedule.pazartesi.corba}</span>
-            <span className="py-1 px-3 bg-stone-50 rounded-full font-bold text-[#0e3d29]">🥘 {schedule.pazartesi.anaYemek}</span>
-            <span className="py-1 px-3 bg-stone-50 rounded-full">🍚 {schedule.pazartesi.pilav}</span>
-            <span className="py-1 px-3 bg-stone-50 rounded-full">🥗 {schedule.pazartesi.salata}</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-stone-800 font-medium">
+            {targetMeal.corba && <span className="py-2 px-4 bg-stone-100 rounded-xl">🍵 {targetMeal.corba}</span>}
+            {targetMeal.anaYemek && <span className="py-2 px-4 bg-amber-50 rounded-xl font-bold text-[#0e3d29] border border-amber-300">🥘 {targetMeal.anaYemek}</span>}
+            {targetMeal.pilav && <span className="py-2 px-4 bg-stone-100 rounded-xl">🍚 {targetMeal.pilav}</span>}
+            {targetMeal.salata && <span className="py-2 px-4 bg-stone-100 rounded-xl">🥗 {targetMeal.salata}</span>}
           </div>
 
-          <div className="text-xs text-stone-500 pt-2 flex items-center justify-between">
-            <span>Ödeme: <strong>{activeSubscription?.paymentMethod === 'cod-daily' ? 'Kapıda Ödeme (290 ₺)' : 'Online Kartla Ödendi'}</strong></span>
-            <span className="text-stone-400">Özel termo çantada sıcacık teslimat</span>
+          <div className="text-xs text-stone-600 pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-stone-100">
+            <span>Ödeme: <strong className="text-stone-900">{activeSubscription?.paymentMethod === 'cod-daily' ? `Kapıda Ödeme (${activeSubscription?.totalAmount || 290} ₺)` : `Online Kartla Ödendi (${activeSubscription?.totalAmount || 290} ₺)`}</strong></span>
+            <span className="text-stone-500 font-medium">Özel termo çantada sıcacık teslimat ✓</span>
           </div>
         </div>
 

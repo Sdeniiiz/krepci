@@ -131,6 +131,10 @@ export default function SubscriptionPlanner({ onCompleteSubscription, initialDay
       tier: selectedTier,
       duration,
       daysCount,
+      targetDayKey: activeDayKey,
+      targetDayName: currentDayData.dayName,
+      targetDate: currentDayData.date,
+      selectedMeal: userSchedule[activeDayKey],
       paymentMethod,
       deliveryInfo: {
         ...deliveryInfo,
@@ -212,6 +216,46 @@ export default function SubscriptionPlanner({ onCompleteSubscription, initialDay
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* HER ADIMDA GÖRÜNÜR ANLIK SEÇİM & GÜN ÇUBUĞU (KULLANICIYI ASLA YALNIZ BIRAKMAYAN BİLGİ ALANI) */}
+        <div className="mb-8 p-3.5 sm:p-4 rounded-2xl bg-white border-2 border-[#0e3d29] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 px-3 py-1.5 rounded-xl font-bold border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span>📅 {duration === 'daily' ? `Seçili Gün: ${currentDayData.dayName} (${currentDayData.date})` : duration === 'weekly' ? '6 Günlük Haftalık Paket' : '24 Günlük Aylık Abonelik'}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-950 px-3 py-1.5 rounded-xl font-bold border border-amber-200">
+              <span>🍽️ {selectedTier.name} ({selectedTier.itemsCount} Çeşit)</span>
+            </div>
+            <div className="text-stone-700 font-medium flex items-center gap-1.5 pt-1 sm:pt-0">
+              <span className="text-[#0e3d29] font-bold">Seçilen Tabağınız:</span>
+              <span className="font-semibold text-stone-900">{[
+                userSchedule[activeDayKey]?.corba,
+                userSchedule[activeDayKey]?.anaYemek,
+                userSchedule[activeDayKey]?.pilav,
+                userSchedule[activeDayKey]?.salata
+              ].filter(Boolean).join(' • ') || 'Menü yükleniyor...'}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between w-full md:w-auto gap-4 self-stretch md:self-auto pt-2 md:pt-0 border-t md:border-t-0 border-stone-100">
+            <div className="text-right">
+              <span className="text-[10px] text-stone-400 block font-normal">Toplam Tutar:</span>
+              <span className="font-serif text-lg font-bold text-[#0e3d29]">
+                {finalTotal} ₺
+              </span>
+            </div>
+            {step < 5 && (
+              <button
+                type="button"
+                onClick={() => setStep(step === 1 && duration === 'daily' ? 4 : step === 4 ? 5 : step + 1)}
+                className="px-4 py-2 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xs"
+              >
+                <span>İlerle</span>
+                <ArrowRight size={13} className="text-[#e2991e]" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -366,6 +410,41 @@ export default function SubscriptionPlanner({ onCompleteSubscription, initialDay
                       </button>
                     );
                   })}
+                </div>
+
+                {/* SEÇİLEN GÜNÜN MENÜ DETAYI (ANINDA GÖRÜNÜR BİLGİ KARTI) */}
+                <div className="mt-3 p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300 text-xs space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-amber-200/80 pb-1.5">
+                    <span className="font-serif font-bold text-sm text-[#0e3d29] flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                      {currentDayData.dayName} Günü Seçili Menünüz ({currentDayData.date}):
+                    </span>
+                    <span className="text-[10px] font-bold text-amber-950 bg-amber-200 px-2.5 py-0.5 rounded-full">
+                      {selectedTier.name} ({selectedTier.itemsCount} Çeşit)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-stone-800">
+                    <div className="p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
+                      <span className="text-[10px] text-stone-400 font-bold block">🍵 ÇORBA</span>
+                      <span className="font-semibold text-xs text-stone-900 block truncate">{userSchedule[activeDayKey]?.corba || currentDayData.corbalar[0]}</span>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-xl border border-amber-300 shadow-2xs ring-1 ring-amber-200">
+                      <span className="text-[10px] text-amber-800 font-bold block">🥘 ANA YEMEK</span>
+                      <span className="font-bold text-xs text-[#0e3d29] block truncate">{userSchedule[activeDayKey]?.anaYemek || currentDayData.anaYemekler[0]}</span>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
+                      <span className="text-[10px] text-stone-400 font-bold block">🍚 PİLAV / MAKARNA</span>
+                      <span className="font-semibold text-xs text-stone-900 block truncate">{userSchedule[activeDayKey]?.pilav || currentDayData.pilavMakarna[0]}</span>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
+                      <span className="text-[10px] text-stone-400 font-bold block">🥗 SALATA / MEZE</span>
+                      <span className="font-semibold text-xs text-stone-900 block truncate">{userSchedule[activeDayKey]?.salata || currentDayData.salataMeze[0]}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-stone-600 pt-0.5">
+                    <span>* İlerlediğinizde dilediğiniz yemeği tek tıkla değiştirebilirsiniz.</span>
+                    <span className="font-serif font-bold text-sm text-[#0e3d29]">{selectedTier.dailyPrice} ₺</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -742,6 +821,41 @@ export default function SubscriptionPlanner({ onCompleteSubscription, initialDay
                 </button>
               </div>
             )}
+
+            {/* SEÇİLEN GÜN VE BELİRLEDİĞİNİZ MENÜ (CANLI VE EN TEPEDE) */}
+            <div className="p-4 sm:p-5 bg-[#0e3d29] text-white rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs shadow-md border-2 border-[#e2991e]">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#e2991e] font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    📍 {currentDayData.dayName} Tabağınız ({currentDayData.date}):
+                  </span>
+                  <span className="text-[10px] bg-white/20 text-amber-200 px-2.5 py-0.5 rounded-full font-bold">
+                    {selectedTier.name} ({selectedTier.itemsCount} Çeşit)
+                  </span>
+                </div>
+                <div className="font-serif text-sm sm:text-base font-bold text-white flex flex-wrap items-center gap-2 pt-0.5">
+                  <span className="bg-white/10 px-2.5 py-1 rounded-xl">🍵 {userSchedule[activeDayKey]?.corba || 'Çorba Seçilmedi'}</span>
+                  <span className="text-stone-400">•</span>
+                  <span className="bg-white/10 px-2.5 py-1 rounded-xl text-amber-300">🥘 {userSchedule[activeDayKey]?.anaYemek || 'Ana Yemek Seçilmedi'}</span>
+                  <span className="text-stone-400">•</span>
+                  <span className="bg-white/10 px-2.5 py-1 rounded-xl">🍚 {userSchedule[activeDayKey]?.pilav || 'Pilav Seçilmedi'}</span>
+                  {userSchedule[activeDayKey]?.salata && (
+                    <>
+                      <span className="text-stone-400">•</span>
+                      <span className="bg-white/10 px-2.5 py-1 rounded-xl">🥗 {userSchedule[activeDayKey]?.salata}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep(5)}
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#e2991e] hover:bg-[#d97706] text-stone-950 rounded-xl font-bold text-xs shrink-0 cursor-pointer shadow-sm flex items-center justify-center gap-1.5 self-end sm:self-auto hover:scale-105 active:scale-95 transition-all"
+              >
+                <span>Bu Menüyü Onayla ➜</span>
+              </button>
+            </div>
 
             {/* Seçili Günün Yemek Seçenekleri */}
             <div className="space-y-6">
