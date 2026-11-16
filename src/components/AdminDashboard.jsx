@@ -10,6 +10,76 @@ import { INITIAL_ORDERS, INITIAL_CUSTOMERS } from '../data/adminMockData';
 import { BRAND_INFO, DAYS_MENU } from '../data/menuData';
 import confetti from 'canvas-confetti';
 
+// Gelecek Haftanın Örnek Editoryal Menüsü (16 - 21 Kasım 2026)
+const SAMPLE_NEXT_WEEK_MENU = [
+  {
+    id: "pazartesi",
+    date: "16.11.2026",
+    dayName: "Pazartesi",
+    colorTheme: { bg: "bg-emerald-800", border: "border-emerald-600", accent: "text-emerald-700", pill: "bg-emerald-100 text-emerald-800" },
+    corbalar: ["Süzme Mercimek Çorbası", "Geleneksel Tarhana Çorbası"],
+    anaYemekler: ["Krepçi Yağlama", "Etli Hünkar Beğendi", "Fırında Sebzeli Tavuk", "Zeytinyağlı Taze Fasulye"],
+    pilavMakarna: ["Tereyağlı Pirinç Pilavı", "Domatesli Bulgur Pilavı"],
+    salataMeze: ["Mevsim Salata", "Havuç Tarator", "Cacık"],
+    tatli: ["Fırın Sütlaç"]
+  },
+  {
+    id: "sali",
+    date: "17.11.2026",
+    dayName: "Salı",
+    colorTheme: { bg: "bg-orange-700", border: "border-orange-500", accent: "text-orange-700", pill: "bg-orange-100 text-orange-800" },
+    corbalar: ["Kremalı Domates Çorbası", "Nohutlu Yayla Çorbası"],
+    anaYemekler: ["Etli Kuru Fasulye", "Tavuklu Bezelye Yemeği", "Arnavut Ciğeri", "Fırın Tavuk Şiş"],
+    pilavMakarna: ["Pirinç Pilavı", "Fırın Peynirli Makarna"],
+    salataMeze: ["Yoğurtlu Semizotu", "Geleneksel Kısır", "Cacık"],
+    tatli: ["Islak Kek"]
+  },
+  {
+    id: "carsamba",
+    date: "18.11.2026",
+    dayName: "Çarşamba",
+    colorTheme: { bg: "bg-teal-800", border: "border-teal-600", accent: "text-teal-700", pill: "bg-teal-100 text-teal-800" },
+    corbalar: ["Ezogelin Çorbası", "Tavuk Suyu Şehriye Çorbası"],
+    anaYemekler: ["Kayseri Mantısı", "Etli Nohut Yemeği", "Patates Püreli Tavuk Sote", "Karnabahar Graten"],
+    pilavMakarna: ["Pirinç Pilavı", "Pesto Soslu Burgu Makarna"],
+    salataMeze: ["Köz Patlıcan Yoğurtlusu", "Pancar Salatası", "Mevsim Salata"],
+    tatli: ["Kemalpaşa Tatlısı"]
+  },
+  {
+    id: "persembe",
+    date: "19.11.2026",
+    dayName: "Perşembe",
+    colorTheme: { bg: "bg-rose-800", border: "border-rose-600", accent: "text-rose-700", pill: "bg-rose-100 text-rose-800" },
+    corbalar: ["Kremalı Brokoli Çorbası", "Yayla Çorbası"],
+    anaYemekler: ["Tereyağlı Etli Keşkek", "Kıymalı Karnıyarık", "Fırında Sebzeli Tavuk Baget"],
+    pilavMakarna: ["Arpa Şehriyeli Bulgur Pilavı", "Kelebek Makarna"],
+    salataMeze: ["Mor Lahana Yoğurtlusu", "Gavurdağı Salatası", "Cacık"],
+    tatli: ["Ev Yapımı Cevizli Baklava"]
+  },
+  {
+    id: "cuma",
+    date: "20.11.2026",
+    dayName: "Cuma",
+    colorTheme: { bg: "bg-indigo-800", border: "border-indigo-600", accent: "text-indigo-700", pill: "bg-indigo-100 text-indigo-800" },
+    corbalar: ["Kremalı Mantar Çorbası", "Süzme Kırmızı Mercimek"],
+    anaYemekler: ["Etli Tepsi Kebabı", "Çıtır Tavuk Şiş", "Tavuklu Taze Bamya", "Zeytinyağlı Enginar"],
+    pilavMakarna: ["Tereyağlı Pirinç Pilavı", "Geleneksel Ankara Tava"],
+    salataMeze: ["Mercimek Köftesi", "Yoğurtlu Havuç Tarator", "Mevsim Salata"],
+    tatli: ["Çikolatalı Mozaik Pasta"]
+  },
+  {
+    id: "cumartesi",
+    date: "21.11.2026",
+    dayName: "Cumartesi",
+    colorTheme: { bg: "bg-amber-800", border: "border-amber-600", accent: "text-amber-700", pill: "bg-amber-100 text-amber-800" },
+    corbalar: ["Mantar Çorbası", "Ezogelin Çorbası"],
+    anaYemekler: ["Kıymalı Krep", "Tavuklu Mantarlı Krep", "Fırında Orman Kebabı"],
+    pilavMakarna: ["Şehriyeli Pirinç Pilavı", "Domates Soslu Kalem Makarna"],
+    salataMeze: ["Karışık Ev Turşusu Kavurması", "Yoğurtlu Kuru Biber", "Cacık"],
+    tatli: ["Karamelli Trileçe"]
+  }
+];
+
 export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeeklyMenu }) {
   const [activeTab, setActiveTab] = useState('deliveries'); // 'deliveries' | 'kitchen' | 'customers' | 'sales' | 'menu-updater'
   const [orders, setOrders] = useState(INITIAL_ORDERS);
@@ -24,11 +94,20 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
   const [draftMenu, setDraftMenu] = useState(() => {
     return JSON.parse(JSON.stringify(currentWeeklyMenu || DAYS_MENU));
   });
-  const [weekRange, setWeekRange] = useState('16 - 21 Kasım 2026');
+  const [weekRange, setWeekRange] = useState(() => {
+    try {
+      return localStorage.getItem('krepci_menu_week_range') || '16 - 21 Kasım 2026';
+    } catch (e) {
+      return '16 - 21 Kasım 2026';
+    }
+  });
+  const [menuLayoutMode, setMenuLayoutMode] = useState('editorial-cards'); // 'editorial-cards' | 'matrix-table'
+  const [selectedDayFilter, setSelectedDayFilter] = useState('all'); // 'all' or day.id
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [rawText, setRawText] = useState('');
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [newDishModal, setNewDishModal] = useState({ open: false, dayIdx: 0, category: 'anaYemekler', dishName: '' });
 
   // Yeni Sipariş Modalı
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -110,7 +189,50 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
     });
   };
 
-  // ================= DOSYA (PDF / GÖRSEL) YÜKLEME VE AYRIŞTIRMA =================
+  // ================= MENÜ DÜZENLEME & YÜKLEME FONKSİYONLARI =================
+  // Tekil yemek silme
+  const handleRemoveDish = (dayIdx, category, dishIdx) => {
+    setDraftMenu(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      if (next[dayIdx] && next[dayIdx][category]) {
+        next[dayIdx][category].splice(dishIdx, 1);
+      }
+      return next;
+    });
+  };
+
+  // Tekil yemek ekleme
+  const handleAddDish = (dayIdx, category, dishName) => {
+    if (!dishName || !dishName.trim()) return;
+    setDraftMenu(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      if (!next[dayIdx][category]) next[dayIdx][category] = [];
+      next[dayIdx][category].push(dishName.trim());
+      return next;
+    });
+    setNewDishModal({ open: false, dayIdx: 0, category: 'anaYemekler', dishName: '' });
+  };
+
+  // Örnek 2. Hafta Menüsünü Otomatik Yükleme
+  const handleLoadSampleNextWeek = () => {
+    setIsAnalyzing(true);
+    setPublishSuccess(false);
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      setDraftMenu(JSON.parse(JSON.stringify(SAMPLE_NEXT_WEEK_MENU)));
+      setWeekRange('16 - 21 Kasım 2026');
+      setUploadedFile({ name: 'Krepci_Haftalik_Menu_16_21_Kasim.pdf' });
+    }, 400);
+  };
+
+  // Orijinal Afişe Sıfırlama
+  const handleResetToOriginal = () => {
+    setDraftMenu(JSON.parse(JSON.stringify(DAYS_MENU)));
+    setWeekRange('09 - 14 Kasım 2026');
+    setUploadedFile(null);
+  };
+
+  // Dosya Yükleme (PDF, Görsel veya Metin)
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -119,94 +241,76 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
     setIsAnalyzing(true);
     setPublishSuccess(false);
 
-    // Akıllı OCR ve Menü Çıkarıcı Simülasyonu
+    // Eğer düz metin dosyası ise FileReader ile oku
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target.result;
+        setRawText(content);
+        parseMenuText(content);
+        setIsAnalyzing(false);
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    // PDF veya Görsel ise OCR simülasyonu
     setTimeout(() => {
       setIsAnalyzing(false);
-      // Dosyadan çıkarılan örnek gelecek haftanın menüsü
-      setDraftMenu(prev => [
-        {
-          ...prev[0],
-          date: "16.11.2026",
-          corbalar: ["Süzme Mercimek Çorbası", "Tarhana Çorbası"],
-          anaYemekler: ["Krepçi Yağlama", "Etli Hünkar Beğendi", "Fırında Sebzeli Tavuk", "Zeytinyağlı Taze Fasulye"],
-          pilavMakarna: ["Tereyağlı Pirinç Pilavı", "Domatesli Bulgur"],
-          salataMeze: ["Mevsim Salata", "Havuç Tarator", "Cacık"]
-        },
-        {
-          ...prev[1],
-          date: "17.11.2026",
-          corbalar: ["Kremalı Domates Çorbası", "Yayla Çorbası"],
-          anaYemekler: ["Etli Kuru Fasulye", "Tavuklu Bezelye", "Arnavut Ciğeri", "Fırın Tavuk Şiş"],
-          pilavMakarna: ["Pirinç Pilavı", "Fırın Makarna"],
-          salataMeze: ["Yoğurtlu Semizotu", "Kısır", "Cacık"]
-        },
-        {
-          ...prev[2],
-          date: "18.11.2026",
-          corbalar: ["Ezogelin Çorbası", "Şehriye Çorbası"],
-          anaYemekler: ["Kayseri Mantısı", "Etli Nohut Yemeği", "Patates Püreli Tavuk Sote"],
-          pilavMakarna: ["Pirinç Pilavı", "Pesto Soslu Makarna"],
-          salataMeze: ["Köz Patlıcan Yoğurtlusu", "Pancar Salatası"]
-        },
-        {
-          ...prev[3],
-          date: "19.11.2026",
-          corbalar: ["Brokoli Çorbası", "Yayla Çorbası"],
-          anaYemekler: ["Etli Keşkek", "Kıymalı Karnıyarık", "Fırında Sebzeli Baget"],
-          pilavMakarna: ["Bulgur Pilavı", "Kelebek Makarna"],
-          salataMeze: ["Mor Lahana Yoğurtlusu", "Mevsim Salata"]
-        },
-        {
-          ...prev[4],
-          date: "20.11.2026",
-          corbalar: ["Mantar Çorbası", "Mercimek Çorbası"],
-          anaYemekler: ["Etli Tepsi Kebabı", "Çıtır Tavuk Şiş", "Tavuklu Bamya Yemeği"],
-          pilavMakarna: ["Pirinç Pilavı", "Ankara Tava"],
-          salataMeze: ["Mercimek Köftesi", "Yoğurtlu Havuç"]
-        },
-        {
-          ...prev[5],
-          date: "21.11.2026",
-          corbalar: ["Mantar Çorbası", "Ezogelin Çorbası"],
-          anaYemekler: ["Kıymalı Krep", "Tavuklu Krep", "Fırında Orman Kebabı"],
-          pilavMakarna: ["Pirinç Pilavı", "Domatesli Makarna"],
-          salataMeze: ["Karışık Turşu Kavurması", "Cacık"]
-        }
-      ]);
-    }, 1200);
+      setDraftMenu(JSON.parse(JSON.stringify(SAMPLE_NEXT_WEEK_MENU)));
+      setWeekRange('16 - 21 Kasım 2026');
+    }, 700);
   };
 
-  // Metin / WhatsApp Yapıştırma Ayrıştırıcısı
-  const handleParseRawText = () => {
-    if (!rawText.trim()) return;
+  // Metin Ayrıştırıcı
+  const parseMenuText = (text) => {
+    if (!text || !text.trim()) return;
     setIsAnalyzing(true);
 
     setTimeout(() => {
       setIsAnalyzing(false);
-      // Metin içinden basit yemek ayıklama
-      const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-      // İlk 6 ana yemeği günlere serpiştir
-      const newDraft = draftMenu.map((day, idx) => {
-        return {
-          ...day,
-          anaYemekler: lines.length > idx ? [lines[idx], ...day.anaYemekler.slice(1)] : day.anaYemekler
-        };
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const dayKeywords = [
+        { key: 'pazartesi', idx: 0 },
+        { key: 'salı', idx: 1 },
+        { key: 'sali', idx: 1 },
+        { key: 'çarşamba', idx: 2 },
+        { key: 'carsamba', idx: 2 },
+        { key: 'perşembe', idx: 3 },
+        { key: 'persembe', idx: 3 },
+        { key: 'cuma', idx: 4 },
+        { key: 'cumartesi', idx: 5 }
+      ];
+
+      setDraftMenu(prev => {
+        const next = JSON.parse(JSON.stringify(prev));
+        let curIdx = 0;
+
+        lines.forEach(line => {
+          const lower = line.toLowerCase();
+          const match = dayKeywords.find(d => lower.startsWith(d.key));
+          if (match) {
+            curIdx = match.idx;
+            const parts = line.split(':');
+            if (parts.length > 1 && parts[1].trim()) {
+              const dishes = parts[1].split(',').map(s => s.trim()).filter(Boolean);
+              if (dishes.length > 0) next[curIdx].anaYemekler = dishes;
+            }
+          } else if (line.length > 2 && !line.includes(':')) {
+            const clean = line.replace(/^[-*•0-9.]\s*/, '').trim();
+            if (clean && !next[curIdx].anaYemekler.includes(clean)) {
+              next[curIdx].anaYemekler.push(clean);
+            }
+          }
+        });
+        return next;
       });
-      setDraftMenu(newDraft);
-    }, 800);
+    }, 500);
   };
 
-  // Taslaktaki yemeği el ile hızlı düzenleme
-  const handleEditDraftItem = (dayIndex, category, textValue) => {
-    const items = textValue.split(',').map(s => s.trim()).filter(Boolean);
-    setDraftMenu(prev => {
-      const next = [...prev];
-      next[dayIndex] = {
-        ...next[dayIndex],
-        [category]: items
-      };
-      return next;
-    });
+  // Metin / WhatsApp Ayrıştırma Butonu
+  const handleParseRawText = () => {
+    parseMenuText(rawText);
   };
 
   // Menüyü Canlıya Yayınlama
@@ -392,207 +496,579 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
           ))}
         </div>
 
-        {/* ===================== SEKME: HAFTALIK MENÜ YÜKLE (PDF / DOSYA / METİN) ===================== */}
+        {/* ===================== SEKME: HAFTALIK MENÜ YÜKLE (PDF / DOSYA / EDİTORYAL TABLO) ===================== */}
         {activeTab === 'menu-updater' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             
-            {/* Üst Açıklama ve Yükleme Kartı */}
+            {/* ÜST BİLGİ & HIZLI İŞLEM PANELİ */}
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-2xs space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+              
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-100 pb-5">
                 <div>
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
                     <Sparkles size={14} />
-                    <span>Hızlı Menü Otomasyonu</span>
+                    <span>Haftalık Menü Otomasyonu & Editoryal Kontrol Masası</span>
                   </div>
-                  <h3 className="font-serif text-2xl font-bold text-[#0e3d29]">
-                    Haftalık Menü Yükleme & Güncelleme
+                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#0e3d29]">
+                    Haftalık Menü Düzenleme & Yayınlama
                   </h3>
-                  <p className="text-xs sm:text-sm text-stone-600 mt-1">
-                    Gün gün yemek yazmakla uğraşmayın! Matbaadan/tasarımcıdan gelen PDF dosyasını yükleyin veya menü listesini yapıştırın; sistem otomatik ayrıştırıp güncellesin.
+                  <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl">
+                    PDF/Afiş dosyasını yükleyin veya aşağıdaki editoryal tabloda gün gün yemekleri kontrol edip tek tıkla canlıya yayınlayın.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={weekRange}
-                    onChange={e => setWeekRange(e.target.value)}
-                    placeholder="Tarih: 16 - 21 Kasım 2026"
-                    className="px-3 py-1.5 rounded-xl border border-stone-300 text-xs font-bold text-[#0e3d29] bg-stone-50 focus:outline-hidden"
-                  />
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Hafta Tarih Aralığı */}
+                  <div className="flex items-center gap-2 bg-[#faf7f2] px-3.5 py-2 rounded-xl border border-stone-200">
+                    <Calendar size={14} className="text-[#0e3d29]" />
+                    <span className="text-[11px] font-bold text-stone-500 uppercase">Hafta:</span>
+                    <input
+                      type="text"
+                      value={weekRange}
+                      onChange={e => setWeekRange(e.target.value)}
+                      className="text-xs font-bold text-[#0e3d29] bg-transparent focus:outline-hidden w-36"
+                      placeholder="16 - 21 Kasım 2026"
+                    />
+                  </div>
+
+                  {/* Canlıya Yayınla Ana Buton */}
+                  <button
+                    type="button"
+                    onClick={handlePublishMenu}
+                    className="px-5 py-2.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                  >
+                    <Check size={16} className="text-[#e2991e]" />
+                    <span>Değişiklikleri Canlıya Al</span>
+                  </button>
                 </div>
               </div>
 
-              {/* 2 İçe Aktarma Yolu (PDF / Dosya veya Hızlı Metin) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* 3 HIZLI AKSİYON KARTI (Yükleme & Örnek Seçenekleri) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
-                {/* 1. PDF / Dosya Yükleme Alanı */}
-                <div className="border-2 border-dashed border-stone-300 hover:border-[#0e3d29] rounded-2xl p-6 text-center transition-colors bg-[#faf7f2]/50 flex flex-col items-center justify-center space-y-3 relative group">
+                {/* 1. Gelecek Haftayı Tek Tıkla Yükle */}
+                <div 
+                  onClick={handleLoadSampleNextWeek}
+                  className="p-4 rounded-2xl border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/50 hover:bg-amber-50 cursor-pointer transition-all group flex items-start gap-3.5"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Sparkles size={18} />
+                  </div>
+                  <div>
+                    <span className="font-serif font-bold text-sm text-stone-900 block group-hover:text-amber-900">
+                      Gelecek Haftayı Otomatik Yükle
+                    </span>
+                    <span className="text-[11px] text-stone-600 block mt-0.5">
+                      16 - 21 Kasım yeni menüsünü (Keşkek, Musakka, vb.) anında tabloya aktarır.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. PDF / Görsel Dosyası Yükle */}
+                <div className="relative p-4 rounded-2xl border-2 border-dashed border-stone-300 hover:border-[#0e3d29] bg-[#faf7f2]/60 hover:bg-[#faf7f2] cursor-pointer transition-all group flex items-start gap-3.5">
                   <input
                     type="file"
                     accept=".pdf,image/*,.docx,.txt"
                     onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
                   />
-                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <FileUp size={24} />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#0e3d29] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <FileUp size={18} />
+                  </div>
+                  <div>
+                    <span className="font-serif font-bold text-sm text-stone-900 block group-hover:text-[#0e3d29]">
+                      PDF veya Afiş Dosyası Yükle
+                    </span>
+                    <span className="text-[11px] text-stone-600 block mt-0.5">
+                      Matbaadan gelen haftalık menü dosyasını sürükleyin veya seçin.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Orijinal Afişe Sıfırla */}
+                <div 
+                  onClick={handleResetToOriginal}
+                  className="p-4 rounded-2xl border border-stone-200 hover:border-stone-400 bg-white hover:bg-stone-50 cursor-pointer transition-all group flex items-start gap-3.5"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center shrink-0 group-hover:rotate-180 transition-transform">
+                    <RefreshCw size={18} />
                   </div>
                   <div>
                     <span className="font-serif font-bold text-sm text-stone-900 block">
-                      Haftalık Menü PDF'i veya Görselini Yükle
+                      İlk Menüye Sıfırla
                     </span>
-                    <span className="text-xs text-stone-500">
-                      PDF, PNG veya JPEG dosyasını sürükleyin veya seçin
+                    <span className="text-[11px] text-stone-500 block mt-0.5">
+                      09 - 14 Kasım orijinal poster menüsünü geri getirir.
                     </span>
                   </div>
-                  {uploadedFile && (
-                    <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                      📄 Yüklendi: {uploadedFile.name}
-                    </span>
-                  )}
-                  {isAnalyzing && (
-                    <span className="text-xs font-bold text-amber-800 animate-pulse">
-                      ⏳ Menü yapısı analiz ediliyor ve günlere dağıtılıyor...
-                    </span>
-                  )}
-                </div>
-
-                {/* 2. WhatsApp / Liste Metni Yapıştırma */}
-                <div className="border border-stone-200 rounded-2xl p-5 bg-white space-y-3 flex flex-col justify-between">
-                  <div className="space-y-1">
-                    <span className="font-serif font-bold text-sm text-stone-900 block">
-                      Veya WhatsApp / Word Menü Listesini Yapıştır
-                    </span>
-                    <span className="text-xs text-stone-500">
-                      Restoran grubundan gelen yemek listesini direkt buraya yapıştırıp ayrıştırabilirsiniz.
-                    </span>
-                    <textarea
-                      rows="3"
-                      placeholder="Pazartesi: Mercimek Çorbası, Krepçi Yağlama, Pirinç Pilavı&#10;Salı: Domates Çorbası, Etli Kuru Fasulye..."
-                      value={rawText}
-                      onChange={e => setRawText(e.target.value)}
-                      className="w-full mt-2 p-2.5 rounded-xl border border-stone-200 text-xs focus:outline-hidden focus:border-[#0e3d29] bg-stone-50"
-                    ></textarea>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleParseRawText}
-                    className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Sparkles size={14} className="text-amber-700" />
-                    <span>Metni Otomatik Ayrıştır & Günlere Dağıt</span>
-                  </button>
                 </div>
 
               </div>
+
+              {/* Dosya Durum Bildirimi & Analiz */}
+              {isAnalyzing && (
+                <div className="p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl flex items-center gap-2 text-xs font-bold animate-pulse">
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Dosya inceleniyor ve 6 günlük yemekler editoryal tabloya aktarılıyor...</span>
+                </div>
+              )}
+
+              {uploadedFile && !isAnalyzing && (
+                <div className="p-3 bg-emerald-50 text-emerald-950 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-medium">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-emerald-700" />
+                    <span>Yüklendi ve Ayrıştırıldı: <strong>{uploadedFile.name}</strong></span>
+                  </div>
+                  <span className="text-[11px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
+                    6 Gün Hazır
+                  </span>
+                </div>
+              )}
+
+              {publishSuccess && (
+                <div className="p-4 bg-emerald-700 text-white rounded-2xl shadow-lg flex items-center justify-between text-xs sm:text-sm font-bold animate-in zoom-in-95 duration-200">
+                  <div className="flex items-center gap-2.5">
+                    <Check size={18} className="text-[#e2991e]" />
+                    <span>Haftalık menü başarıyla güncellendi! Ana sayfa ve mobil uygulama anında yeni menüyü yayına aldı.</span>
+                  </div>
+                  <span className="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-sans">Canlıda</span>
+                </div>
+              )}
+
             </div>
 
-            {/* Başarı Bildirimi */}
-            {publishSuccess && (
-              <div className="p-4 bg-emerald-500 text-white rounded-2xl shadow-md flex items-center justify-between text-xs sm:text-sm font-bold animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-2">
-                  <Check size={18} />
-                  <span>Haftalık menü başarıyla güncellendi! Web sitesi ve mobil uygulama anında yeni menüyü canlıya aldı.</span>
-                </div>
-                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Canlıda</span>
-              </div>
-            )}
-
-            {/* ================= GÖRSEL DÜZENLEME & KONTROL TABLOSU ================= */}
+            {/* EDİTORYAL TABLO & KONTROL MASASI BAŞLIĞI */}
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-2xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-100 pb-4">
                 <div>
-                  <h4 className="font-serif font-bold text-lg text-[#0e3d29]">
-                    Önizleme & Hızlı Düzenleme ({weekRange})
-                  </h4>
-                  <p className="text-xs text-stone-500">
-                    Ayrıştırılan yemekleri kontrol edin; varsa ufak değişiklikleri kutucuklara tıklayarak virgülle yazıp düzeltin.
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-serif font-bold text-xl text-[#0e3d29]">
+                      Haftalık Menü Editoryal Çizelgesi
+                    </h4>
+                    <span className="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                      {weekRange}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Yemekleri tek tek rozetler halinde görebilir, dilediğinizi silebilir veya <strong>+ Ekle</strong> butonuyla hemen yeni yemek ekleyebilirsiniz.
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handlePublishMenu}
-                  className="px-6 py-3 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-                >
-                  <Sparkles size={15} className="text-[#e2991e]" />
-                  <span>Menüyü Sisteme Yayınla & Canlıya Al</span>
-                  <ArrowRight size={14} className="text-[#e2991e]" />
-                </button>
-              </div>
-
-              {/* 6 Günlük Kartlar Tablosu */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 text-xs">
-                {draftMenu.map((day, idx) => (
-                  <div key={day.id} className="p-4 rounded-2xl border border-stone-200 bg-[#faf7f2]/60 space-y-3">
-                    <div className="border-b border-stone-200 pb-1.5 flex justify-between items-baseline">
-                      <span className="font-serif font-bold text-sm text-[#0e3d29]">{day.dayName}</span>
-                      <span className="text-[10px] text-stone-400">{day.date}</span>
-                    </div>
-
-                    {/* Çorbalar */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">🍵 Çorbalar</span>
-                      <input
-                        type="text"
-                        value={day.corbalar.join(', ')}
-                        onChange={e => handleEditDraftItem(idx, 'corbalar', e.target.value)}
-                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
-                      />
-                    </div>
-
-                    {/* Ana Yemekler */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#0e3d29] block">🥘 Ana Yemekler</span>
-                      <textarea
-                        rows="3"
-                        value={day.anaYemekler.join(', ')}
-                        onChange={e => handleEditDraftItem(idx, 'anaYemekler', e.target.value)}
-                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
-                      ></textarea>
-                    </div>
-
-                    {/* Pilav & Makarna */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 block">🍚 Pilav & Makarna</span>
-                      <input
-                        type="text"
-                        value={day.pilavMakarna.join(', ')}
-                        onChange={e => handleEditDraftItem(idx, 'pilavMakarna', e.target.value)}
-                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
-                      />
-                    </div>
-
-                    {/* Salata & Meze */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 block">🥗 Salata & Meze</span>
-                      <input
-                        type="text"
-                        value={day.salataMeze.slice(0, 3).join(', ')}
-                        onChange={e => handleEditDraftItem(idx, 'salataMeze', e.target.value)}
-                        className="w-full p-1.5 rounded-lg border border-stone-200 text-[11px] bg-white focus:outline-hidden"
-                      />
-                    </div>
+                {/* Görünüm Seçimi & Filtre */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex bg-stone-100 p-1 rounded-xl text-xs font-serif">
+                    <button
+                      type="button"
+                      onClick={() => setMenuLayoutMode('editorial-cards')}
+                      className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                        menuLayoutMode === 'editorial-cards'
+                          ? 'bg-white text-[#0e3d29] font-bold shadow-2xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      🏷️ Editoryal Gün Kartları
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMenuLayoutMode('matrix-table')}
+                      className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                        menuLayoutMode === 'matrix-table'
+                          ? 'bg-white text-[#0e3d29] font-bold shadow-2xs'
+                          : 'text-stone-600 hover:text-stone-900'
+                      }`}
+                    >
+                      📊 Haftalık Çizelge Tablosu
+                    </button>
                   </div>
-                ))}
+                </div>
               </div>
 
-              {/* Alt Yayınlama Barı */}
+              {/* GÖRÜNÜM 1: EDİTORYAL GÜN KARTLARI (THE PERFECT PLATE & ADİLE SULTAN USULÜ) */}
+              {menuLayoutMode === 'editorial-cards' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                  {draftMenu.map((day, dayIdx) => (
+                    <div 
+                      key={day.id} 
+                      className="p-4 rounded-2xl border border-stone-200 bg-[#faf7f2]/70 hover:bg-[#faf7f2] transition-colors flex flex-col justify-between space-y-4 shadow-2xs"
+                    >
+                      <div>
+                        {/* Gün Başlığı */}
+                        <div className="border-b border-stone-200 pb-2 flex justify-between items-baseline">
+                          <div>
+                            <span className="font-serif font-bold text-base text-[#0e3d29] block">
+                              {day.dayName}
+                            </span>
+                            <span className="text-[10px] text-stone-500 font-sans">
+                              {day.date}
+                            </span>
+                          </div>
+                          <span className="text-[10px] bg-[#0e3d29]/10 text-[#0e3d29] font-bold px-1.5 py-0.5 rounded-md">
+                            Gün {dayIdx + 1}
+                          </span>
+                        </div>
+
+                        {/* Kategori 1: Çorbalar */}
+                        <div className="mt-3 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1">
+                              <span>🍵</span> Çorbalar
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setNewDishModal({ open: true, dayIdx, category: 'corbalar', dishName: '' })}
+                              className="text-[10px] text-amber-900 hover:text-amber-950 font-bold hover:underline cursor-pointer"
+                            >
+                              + Ekle
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {day.corbalar.map((dish, dIdx) => (
+                              <span 
+                                key={dIdx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] bg-amber-50 text-amber-950 border border-amber-200/70"
+                              >
+                                <span>{dish}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDish(dayIdx, 'corbalar', dIdx)}
+                                  className="text-amber-700 hover:text-rose-600 cursor-pointer ml-0.5"
+                                  title="Yemeği Çıkar"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Kategori 2: Ana Yemekler */}
+                        <div className="mt-3.5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0e3d29] flex items-center gap-1">
+                              <span>🥘</span> Ana Yemekler
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setNewDishModal({ open: true, dayIdx, category: 'anaYemekler', dishName: '' })}
+                              className="text-[10px] text-[#0e3d29] hover:text-[#185a3e] font-bold hover:underline cursor-pointer"
+                            >
+                              + Ekle
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {day.anaYemekler.map((dish, dIdx) => (
+                              <span 
+                                key={dIdx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] bg-emerald-50 text-emerald-950 border border-emerald-200 font-medium"
+                              >
+                                <span>{dish}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDish(dayIdx, 'anaYemekler', dIdx)}
+                                  className="text-emerald-700 hover:text-rose-600 cursor-pointer ml-0.5"
+                                  title="Yemeği Çıkar"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Kategori 3: Pilav & Makarna */}
+                        <div className="mt-3.5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1">
+                              <span>🍚</span> Pilav / Makarna
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setNewDishModal({ open: true, dayIdx, category: 'pilavMakarna', dishName: '' })}
+                              className="text-[10px] text-stone-700 hover:text-stone-900 font-bold hover:underline cursor-pointer"
+                            >
+                              + Ekle
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {day.pilavMakarna.map((dish, dIdx) => (
+                              <span 
+                                key={dIdx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] bg-white text-stone-800 border border-stone-200"
+                              >
+                                <span>{dish}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDish(dayIdx, 'pilavMakarna', dIdx)}
+                                  className="text-stone-400 hover:text-rose-600 cursor-pointer ml-0.5"
+                                  title="Yemeği Çıkar"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Kategori 4: Meze / Salata */}
+                        <div className="mt-3.5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-900 flex items-center gap-1">
+                              <span>🥗</span> Salata & Meze
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setNewDishModal({ open: true, dayIdx, category: 'salataMeze', dishName: '' })}
+                              className="text-[10px] text-orange-900 hover:text-orange-950 font-bold hover:underline cursor-pointer"
+                            >
+                              + Ekle
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {day.salataMeze.map((dish, dIdx) => (
+                              <span 
+                                key={dIdx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] bg-orange-50 text-orange-950 border border-orange-200/70"
+                              >
+                                <span>{dish}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveDish(dayIdx, 'salataMeze', dIdx)}
+                                  className="text-orange-600 hover:text-rose-600 cursor-pointer ml-0.5"
+                                  title="Yemeği Çıkar"
+                                >
+                                  <X size={11} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* Hızlı Yemek Ekleme Kısayolu */}
+                      <button
+                        type="button"
+                        onClick={() => setNewDishModal({ open: true, dayIdx, category: 'anaYemekler', dishName: '' })}
+                        className="w-full py-1.5 rounded-xl border border-dashed border-stone-300 hover:border-[#0e3d29] text-[11px] text-stone-600 hover:text-[#0e3d29] font-medium transition-colors flex items-center justify-center gap-1 cursor-pointer bg-white"
+                      >
+                        <Plus size={12} />
+                        <span>Yemek Ekle</span>
+                      </button>
+
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* GÖRÜNÜM 2: HAFTALIK ÇİZELGE TABLOSU (MATRİS TABLO) */}
+              {menuLayoutMode === 'matrix-table' && (
+                <div className="overflow-x-auto border border-stone-200 rounded-2xl">
+                  <table className="w-full text-left border-collapse min-w-[700px] text-xs">
+                    <thead>
+                      <tr className="bg-[#0e3d29] text-[#f7e7ce] font-serif">
+                        <th className="p-3.5 border-b border-[#0e3d29] font-bold w-28">Kategori</th>
+                        {draftMenu.map((day, idx) => (
+                          <th key={day.id} className="p-3.5 border-b border-[#0e3d29] font-bold text-center">
+                            <div>{day.dayName}</div>
+                            <span className="text-[10px] font-sans font-normal opacity-75">{day.date}</span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-200 bg-white">
+                      {/* Çorbalar Satırı */}
+                      <tr className="hover:bg-stone-50/50">
+                        <td className="p-3 font-serif font-bold text-amber-900 bg-amber-50/50 border-r border-stone-200">
+                          🍵 Çorbalar
+                        </td>
+                        {draftMenu.map((day, dayIdx) => (
+                          <td key={day.id} className="p-2.5 border-r border-stone-200 align-top">
+                            <div className="flex flex-col gap-1">
+                              {day.corbalar.map((dish, dIdx) => (
+                                <span key={dIdx} className="inline-flex items-center justify-between gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-950 text-[11px] border border-amber-200">
+                                  <span>{dish}</span>
+                                  <button onClick={() => handleRemoveDish(dayIdx, 'corbalar', dIdx)} className="text-stone-400 hover:text-rose-600 cursor-pointer">
+                                    <X size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                              <button
+                                onClick={() => setNewDishModal({ open: true, dayIdx, category: 'corbalar', dishName: '' })}
+                                className="text-[10px] text-amber-800 hover:underline text-left mt-0.5 cursor-pointer"
+                              >
+                                + Ekle
+                              </button>
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+
+                      {/* Ana Yemekler Satırı */}
+                      <tr className="hover:bg-stone-50/50">
+                        <td className="p-3 font-serif font-bold text-[#0e3d29] bg-emerald-50/50 border-r border-stone-200">
+                          🥘 Ana Yemekler
+                        </td>
+                        {draftMenu.map((day, dayIdx) => (
+                          <td key={day.id} className="p-2.5 border-r border-stone-200 align-top">
+                            <div className="flex flex-col gap-1">
+                              {day.anaYemekler.map((dish, dIdx) => (
+                                <span key={dIdx} className="inline-flex items-center justify-between gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-950 text-[11px] border border-emerald-200 font-medium">
+                                  <span>{dish}</span>
+                                  <button onClick={() => handleRemoveDish(dayIdx, 'anaYemekler', dIdx)} className="text-stone-400 hover:text-rose-600 cursor-pointer">
+                                    <X size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                              <button
+                                onClick={() => setNewDishModal({ open: true, dayIdx, category: 'anaYemekler', dishName: '' })}
+                                className="text-[10px] text-[#0e3d29] hover:underline text-left mt-0.5 cursor-pointer font-bold"
+                              >
+                                + Ekle
+                              </button>
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+
+                      {/* Pilav & Makarna Satırı */}
+                      <tr className="hover:bg-stone-50/50">
+                        <td className="p-3 font-serif font-bold text-stone-700 bg-stone-100/60 border-r border-stone-200">
+                          🍚 Pilav & Makarna
+                        </td>
+                        {draftMenu.map((day, dayIdx) => (
+                          <td key={day.id} className="p-2.5 border-r border-stone-200 align-top">
+                            <div className="flex flex-col gap-1">
+                              {day.pilavMakarna.map((dish, dIdx) => (
+                                <span key={dIdx} className="inline-flex items-center justify-between gap-1 px-2 py-0.5 rounded bg-white text-stone-800 text-[11px] border border-stone-200">
+                                  <span>{dish}</span>
+                                  <button onClick={() => handleRemoveDish(dayIdx, 'pilavMakarna', dIdx)} className="text-stone-400 hover:text-rose-600 cursor-pointer">
+                                    <X size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                              <button
+                                onClick={() => setNewDishModal({ open: true, dayIdx, category: 'pilavMakarna', dishName: '' })}
+                                className="text-[10px] text-stone-600 hover:underline text-left mt-0.5 cursor-pointer"
+                              >
+                                + Ekle
+                              </button>
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+
+                      {/* Salata & Meze Satırı */}
+                      <tr className="hover:bg-stone-50/50">
+                        <td className="p-3 font-serif font-bold text-orange-950 bg-orange-50/40 border-r border-stone-200">
+                          🥗 Salata & Meze
+                        </td>
+                        {draftMenu.map((day, dayIdx) => (
+                          <td key={day.id} className="p-2.5 border-r border-stone-200 align-top">
+                            <div className="flex flex-col gap-1">
+                              {day.salataMeze.map((dish, dIdx) => (
+                                <span key={dIdx} className="inline-flex items-center justify-between gap-1 px-2 py-0.5 rounded bg-orange-50 text-orange-950 text-[11px] border border-orange-200">
+                                  <span>{dish}</span>
+                                  <button onClick={() => handleRemoveDish(dayIdx, 'salataMeze', dIdx)} className="text-stone-400 hover:text-rose-600 cursor-pointer">
+                                    <X size={10} />
+                                  </button>
+                                </span>
+                              ))}
+                              <button
+                                onClick={() => setNewDishModal({ open: true, dayIdx, category: 'salataMeze', dishName: '' })}
+                                className="text-[10px] text-orange-850 hover:underline text-left mt-0.5 cursor-pointer"
+                              >
+                                + Ekle
+                              </button>
+                            </div>
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Alt Yayınlama ve Bilgi Çubuğu */}
               <div className="pt-4 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span className="text-xs text-stone-500">
-                  Değişiklikleri kaydettiğiniz anda abonelik planlayıcısı, haftalık menü sayfası ve mobil uygulama otomatik olarak yeni menüye geçer.
+                  💡 Bu menüyü onayladığınızda haftalık afiş, abone menü planlayıcısı ve mobil uygulama derhal bu yeni haftanın yemeklerine geçer.
                 </span>
 
                 <button
                   type="button"
                   onClick={handlePublishMenu}
-                  className="w-full sm:w-auto px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-8 py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                 >
                   <Check size={16} className="text-[#e2991e]" />
                   <span>Değişiklikleri Onayla & Canlıya Al</span>
                 </button>
               </div>
+
             </div>
+
+            {/* YENİ YEMEK EKLEME MODALI */}
+            {newDishModal.open && (
+              <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                    <div>
+                      <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">
+                        {draftMenu[newDishModal.dayIdx]?.dayName} Günü
+                      </span>
+                      <h4 className="font-serif font-bold text-lg text-[#0e3d29]">
+                        Yeni {newDishModal.category === 'corbalar' ? 'Çorba' : newDishModal.category === 'anaYemekler' ? 'Ana Yemek' : newDishModal.category === 'pilavMakarna' ? 'Pilav / Makarna' : 'Salata / Meze'} Ekle
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewDishModal({ open: false, dayIdx: 0, category: 'anaYemekler', dishName: '' })}
+                      className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 cursor-pointer"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <form 
+                    onSubmit={e => {
+                      e.preventDefault();
+                      handleAddDish(newDishModal.dayIdx, newDishModal.category, newDishModal.dishName);
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="text-xs font-bold text-stone-700 block mb-1">
+                        Yemek Adı:
+                      </label>
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Örn: Hünkar Beğendi, Fırın Tavuk..."
+                        value={newDishModal.dishName}
+                        onChange={e => setNewDishModal(prev => ({ ...prev, dishName: e.target.value }))}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs focus:outline-hidden focus:border-[#0e3d29] bg-stone-50"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewDishModal({ open: false, dayIdx: 0, category: 'anaYemekler', dishName: '' })}
+                        className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 cursor-pointer"
+                      >
+                        Vazgeç
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Listeye Ekle
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
           </div>
         )}
