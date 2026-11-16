@@ -70,13 +70,47 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
   const perDayEffective = Math.round(finalTotal / daysCount);
 
   const handleItemSelect = (dayId, category, itemName) => {
-    setUserSchedule(prev => ({
-      ...prev,
-      [dayId]: {
-        ...prev[dayId],
-        [category]: itemName
+    setUserSchedule(prev => {
+      const currentDay = { ...prev[dayId] };
+      const maxSlots = selectedTier.itemsCount;
+
+      if (category === 'anaYemek') {
+        currentDay.anaYemek = itemName;
+      } else if (maxSlots === 1) {
+        // 1 Çeşit menü: Sadece Ana Yemek seçilebilir
+        return prev;
+      } else if (maxSlots === 2) {
+        // 2 Çeşit Kuralı: 1 Ana Yemek + SADECE 1 Yan Lezzet (Çorba VEYA Pilav/Makarna VEYA Meze)
+        if (currentDay[category] === itemName) {
+          currentDay[category] = '';
+        } else {
+          currentDay.corba = category === 'corba' ? itemName : '';
+          currentDay.pilav = category === 'pilav' ? itemName : '';
+          currentDay.salata = category === 'salata' ? itemName : '';
+        }
+      } else if (maxSlots === 3) {
+        // 3 Çeşit Kuralı: 1 Ana Yemek + En Fazla 2 Yan Lezzet
+        if (currentDay[category] === itemName) {
+          currentDay[category] = '';
+        } else {
+          currentDay[category] = itemName;
+          const sideCount = (currentDay.corba ? 1 : 0) + (currentDay.pilav ? 1 : 0) + (currentDay.salata ? 1 : 0);
+          if (sideCount > 2) {
+            if (category === 'corba') currentDay.salata = '';
+            else if (category === 'pilav') currentDay.salata = '';
+            else if (category === 'salata') currentDay.pilav = '';
+          }
+        }
+      } else {
+        // 4 Çeşit: Serbestçe 4 lezzet seçilebilir
+        currentDay[category] = currentDay[category] === itemName ? '' : itemName;
       }
-    }));
+
+      return {
+        ...prev,
+        [dayId]: currentDay
+      };
+    });
   };
 
   const handleFinish = (e) => {
@@ -175,7 +209,10 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
                 return (
                   <div
                     key={tier.id}
-                    onClick={() => setSelectedTier(tier)}
+                    onClick={() => {
+                      setSelectedTier(tier);
+                      setUserSchedule(generatePersonalizedPlan(selectedProfile, dislikedList, tier.itemsCount));
+                    }}
                     className={`py-5 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-colors group ${
                       isSelected ? 'bg-amber-50/60' : 'hover:bg-white/60'
                     }`}
@@ -653,16 +690,31 @@ export default function SubscriptionPlanner({ onCompleteSubscription }) {
               </div>
 
               {/* Seçili Gün Tabağı Özeti */}
-              <div className="p-4 bg-[#0e3d29] text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+              <div className="p-4 bg-[#0e3d29] text-white rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                 <div>
-                  <span className="text-[#e2991e] font-bold uppercase tracking-wider block text-[10px]">
-                    {currentDayData.dayName} Tabağınız:
-                  </span>
-                  <span className="font-serif text-sm font-bold text-white">
-                    {userSchedule[activeDayKey]?.corba} • {userSchedule[activeDayKey]?.anaYemek} • {userSchedule[activeDayKey]?.pilav} • {userSchedule[activeDayKey]?.salata}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#e2991e] font-bold uppercase tracking-wider text-[10px]">
+                      {currentDayData.dayName} Tabağınız ({selectedTier.name}):
+                    </span>
+                    <span className="text-[10px] bg-white/20 text-amber-200 px-2 py-0.5 rounded-full font-bold">
+                      {selectedTier.itemsCount === 2 && '1 Ana Yemek + 1 Yan Lezzet'}
+                      {selectedTier.itemsCount === 1 && 'Sadece Ana Yemek'}
+                      {selectedTier.itemsCount === 3 && '3 Çeşit Lezzet'}
+                      {selectedTier.itemsCount >= 4 && '4 Çeşit Tam Menü'}
+                    </span>
+                  </div>
+                  <div className="font-serif text-sm font-bold text-white mt-1">
+                    {[
+                      userSchedule[activeDayKey]?.anaYemek,
+                      userSchedule[activeDayKey]?.corba,
+                      userSchedule[activeDayKey]?.pilav,
+                      userSchedule[activeDayKey]?.salata
+                    ].filter(Boolean).join(' • ')}
+                  </div>
                 </div>
-                <span className="text-[11px] text-emerald-300 font-semibold">✓ Size Özel Filtrelendi</span>
+                <span className="text-[11px] text-emerald-300 font-semibold shrink-0">
+                  {selectedTier.itemsCount} Çeşit Tamamlandı ✓
+                </span>
               </div>
 
             </div>

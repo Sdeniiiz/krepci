@@ -350,8 +350,8 @@ export const TASTE_PROFILES = [
   }
 ];
 
-// Kişiselleştirilmiş Menü Üretim Motoru
-export function generatePersonalizedPlan(profileId = "dengeli", dislikedList = []) {
+// Kişiselleştirilmiş Menü Üretim Motoru (Paket Porsiyon Sayısına Göre Kısıtlamalı)
+export function generatePersonalizedPlan(profileId = "dengeli", dislikedList = [], itemsCount = 3) {
   const plan = {};
 
   const isDishExcluded = (dishName) => {
@@ -407,17 +407,58 @@ export function generatePersonalizedPlan(profileId = "dengeli", dislikedList = [
     const availableSalata = day.salataMeze.filter(s => !isDishExcluded(s));
     const chosenSalata = availableSalata.length > 0 ? availableSalata[0] : day.salataMeze[0];
 
+    // PAKET KURALI VE PORSIYON SINIRI:
+    // 1 Çeşit: Sadece Ana Yemek
+    // 2 Çeşit: Ana Yemek + (Çorba VEYA Pilav/Makarna)
+    // 3 Çeşit: Çorba + Ana Yemek + Pilav
+    // 4 Çeşit: Çorba + Ana Yemek + Pilav + Salata/Meze
+    let finalCorba = chosenCorba;
+    let finalPilav = chosenPilav;
+    let finalSalata = chosenSalata;
+
+    if (itemsCount === 1) {
+      finalCorba = "";
+      finalPilav = "";
+      finalSalata = "";
+    } else if (itemsCount === 2) {
+      // 2 çeşit kuralı: Ana yemek garanti + 1 yan lezzet (öncelik Çorba)
+      finalCorba = chosenCorba;
+      finalPilav = "";
+      finalSalata = "";
+    } else if (itemsCount === 3) {
+      // 3 çeşit: Çorba + Ana Yemek + Pilav (Salata yok)
+      finalCorba = chosenCorba;
+      finalPilav = chosenPilav;
+      finalSalata = "";
+    } else {
+      // 4 çeşit veya üstü: Hepsi dolu
+      finalCorba = chosenCorba;
+      finalPilav = chosenPilav;
+      finalSalata = chosenSalata;
+    }
+
     plan[day.id] = {
       dayName: day.dayName,
       date: day.date,
-      corba: chosenCorba,
+      corba: finalCorba,
       anaYemek: chosenAnaYemek,
-      pilav: chosenPilav,
-      salata: chosenSalata,
-      tatli: (day.tatli && day.tatli[0]) || "Islak Kek",
+      pilav: finalPilav,
+      salata: finalSalata,
+      tatli: itemsCount >= 4 ? ((day.tatli && day.tatli[0]) || "Islak Kek") : "",
       excludedCount: day.anaYemekler.length - day.anaYemekler.filter(m => !isDishExcluded(m)).length
     };
   });
 
   return plan;
+}
+
+// Bir tabağın seçili ürün sayısını hesaplar
+export function countPlateItems(plate) {
+  if (!plate) return 0;
+  let count = 0;
+  if (plate.corba && plate.corba.trim() !== "") count++;
+  if (plate.anaYemek && plate.anaYemek.trim() !== "") count++;
+  if (plate.pilav && plate.pilav.trim() !== "") count++;
+  if (plate.salata && plate.salata.trim() !== "") count++;
+  return count;
 }

@@ -3,7 +3,7 @@ import {
   X, Utensils, Calendar, Clock, ShoppingBag, 
   User, Check, ChevronRight, Bell, Sparkles, MapPin, 
   ArrowRight, ArrowLeft, CreditCard, Banknote, ShieldCheck, 
-  CheckCircle2, Ban, Heart, ThumbsUp, RefreshCw
+  CheckCircle2, Ban, Heart, ThumbsUp, RefreshCw, Edit3
 } from 'lucide-react';
 import { 
   DAYS_MENU, BRAND_INFO, PRICING_TIERS, 
@@ -15,19 +15,21 @@ export default function MobileSimulator({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   // Mobil Akış Durumu:
-  // 'quiz-taste' -> 'quiz-dislike' -> 'plan-preview' -> 'checkout' -> 'success' -> 'dashboard'
+  // 'quiz-taste' -> 'quiz-dislike' -> 'plan-preview' -> 'customize' -> 'checkout' -> 'success' -> 'dashboard'
   const [mobileFlow, setMobileFlow] = useState('quiz-taste');
   const [activeTab, setActiveTab] = useState('home'); // 'home' | 'schedule' | 'track' | 'profile'
 
-  // Kullanıcı Tercihleri (Soft Anket)
+  // Kullanıcı Tercihleri
   const [tasteProfile, setTasteProfile] = useState('dengeli');
   const [dislikedList, setDislikedList] = useState([]);
-  const [selectedTier, setSelectedTier] = useState(PRICING_TIERS[2]); // 3 Çeşit (290 ₺)
+  const [selectedTier, setSelectedTier] = useState(PRICING_TIERS[2]); // 3 Çeşit
   const [duration, setDuration] = useState('monthly'); // 'monthly' | 'weekly' | 'daily'
   const [paymentMethod, setPaymentMethod] = useState('cod-daily'); // 'cod-daily' | 'online-card'
 
   // Kişisel Menü Planı
-  const [personalizedPlan, setPersonalizedPlan] = useState(() => generatePersonalizedPlan('dengeli', []));
+  const [personalizedPlan, setPersonalizedPlan] = useState(() => 
+    generatePersonalizedPlan('dengeli', [], PRICING_TIERS[2].itemsCount)
+  );
   const [selectedDayKey, setSelectedDayKey] = useState('pazartesi');
 
   // Teslimat Formu
@@ -42,7 +44,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
   const toggleDisliked = (id) => {
     setDislikedList(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      const newPlan = generatePersonalizedPlan(tasteProfile, next);
+      const newPlan = generatePersonalizedPlan(tasteProfile, next, selectedTier.itemsCount);
       setPersonalizedPlan(newPlan);
       return next;
     });
@@ -51,9 +53,61 @@ export default function MobileSimulator({ isOpen, onClose }) {
   // Profil değiştiğinde
   const handleProfileSelect = (profId) => {
     setTasteProfile(profId);
-    const newPlan = generatePersonalizedPlan(profId, dislikedList);
+    const newPlan = generatePersonalizedPlan(profId, dislikedList, selectedTier.itemsCount);
     setPersonalizedPlan(newPlan);
     setMobileFlow('quiz-dislike');
+  };
+
+  // Porsiyon Paketi Değiştiğinde (1, 2, 3, 4 Çeşit Sınırı Otomatik Uygulanır)
+  const handleTierSelect = (tier) => {
+    setSelectedTier(tier);
+    const newPlan = generatePersonalizedPlan(tasteProfile, dislikedList, tier.itemsCount);
+    setPersonalizedPlan(newPlan);
+  };
+
+  // Mobilde Menü Düzenleme & Paket Kuralı Denetimi (2 Çeşit, 3 Çeşit Kuralı)
+  const handleItemSelect = (dayId, category, itemName) => {
+    setPersonalizedPlan(prev => {
+      const currentDay = { ...prev[dayId] };
+      const maxSlots = selectedTier.itemsCount;
+
+      if (category === 'anaYemek') {
+        currentDay.anaYemek = itemName;
+      } else if (maxSlots === 1) {
+        // 1 Çeşit menü: Yan lezzet seçilemez
+        return prev;
+      } else if (maxSlots === 2) {
+        // 2 ÇEŞİT KURALI: 1 Ana Yemek + SADECE 1 Yan Lezzet (Çorba VEYA Pilav/Makarna VEYA Meze)
+        if (currentDay[category] === itemName) {
+          currentDay[category] = '';
+        } else {
+          currentDay.corba = category === 'corba' ? itemName : '';
+          currentDay.pilav = category === 'pilav' ? itemName : '';
+          currentDay.salata = category === 'salata' ? itemName : '';
+        }
+      } else if (maxSlots === 3) {
+        // 3 ÇEŞİT KURALI: 1 Ana Yemek + En Fazla 2 Yan Lezzet
+        if (currentDay[category] === itemName) {
+          currentDay[category] = '';
+        } else {
+          currentDay[category] = itemName;
+          const sideCount = (currentDay.corba ? 1 : 0) + (currentDay.pilav ? 1 : 0) + (currentDay.salata ? 1 : 0);
+          if (sideCount > 2) {
+            if (category === 'corba') currentDay.salata = '';
+            else if (category === 'pilav') currentDay.salata = '';
+            else if (category === 'salata') currentDay.pilav = '';
+          }
+        }
+      } else {
+        // 4 Çeşit: Serbestçe 4 lezzet seçilebilir
+        currentDay[category] = currentDay[category] === itemName ? '' : itemName;
+      }
+
+      return {
+        ...prev,
+        [dayId]: currentDay
+      };
+    });
   };
 
   // Fiyat Hesabı
@@ -69,6 +123,19 @@ export default function MobileSimulator({ isOpen, onClose }) {
       confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } });
     } catch (err) {}
     setMobileFlow('success');
+  };
+
+  const currentDayData = DAYS_MENU.find(d => d.id === selectedDayKey) || DAYS_MENU[0];
+
+  // Bir yemeğin elenip elenmediğini kontrol
+  const isDishExcluded = (dishName) => {
+    if (!dishName) return false;
+    const lower = dishName.toLowerCase();
+    return dislikedList.some(dislikedId => {
+      const item = DISLIKED_INGREDIENTS.find(i => i.id === dislikedId);
+      if (!item) return false;
+      return item.keywords.some(kw => lower.includes(kw));
+    });
   };
 
   return (
@@ -103,6 +170,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
                 onClick={() => {
                   if (mobileFlow === 'quiz-dislike') setMobileFlow('quiz-taste');
                   else if (mobileFlow === 'plan-preview') setMobileFlow('quiz-dislike');
+                  else if (mobileFlow === 'customize') setMobileFlow('plan-preview');
                   else if (mobileFlow === 'checkout') setMobileFlow('plan-preview');
                   else if (mobileFlow === 'success') setMobileFlow('plan-preview');
                   else setMobileFlow('plan-preview');
@@ -123,6 +191,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
               {mobileFlow === 'quiz-taste' && '1/3 Damak Tercihi'}
               {mobileFlow === 'quiz-dislike' && '2/3 İstemediğin Yemekler'}
               {mobileFlow === 'plan-preview' && 'Sana Özel Menü'}
+              {mobileFlow === 'customize' && 'Menüyü Düzenle'}
               {mobileFlow === 'checkout' && 'Ödeme & Teslimat'}
               {mobileFlow === 'success' && 'Abonelik Onaylandı'}
               {mobileFlow === 'dashboard' && 'Yemek Takvimim'}
@@ -131,7 +200,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
             {/* Mobilde Kapat Butonu */}
             <button
               onClick={onClose}
-              className="text-stone-500 hover:text-stone-900 sm:hidden p-1"
+              className="text-stone-500 hover:text-stone-900 sm:hidden p-1 cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -259,7 +328,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
               </div>
             )}
 
-            {/* ADIM 3: KİŞİSELLEŞTİRİLMİŞ MENÜ ÖNERİSİ (PLAN PREVIEW) */}
+            {/* ADIM 3: KİŞİSELLEŞTİRİLMİŞ MENÜ ÖNERİSİ & DÜZENLEME SEÇENEĞİ */}
             {mobileFlow === 'plan-preview' && (
               <div className="space-y-5 animate-in fade-in duration-300">
                 <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
@@ -270,22 +339,49 @@ export default function MobileSimulator({ isOpen, onClose }) {
 
                   <button
                     onClick={() => setMobileFlow('quiz-taste')}
-                    className="text-[11px] text-stone-500 hover:text-[#0e3d29] underline flex items-center gap-1"
+                    className="text-[11px] text-stone-500 hover:text-[#0e3d29] underline flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw size={11} />
-                    <span>Filtreleri Değiştir</span>
+                    <span>Filtreler</span>
                   </button>
                 </div>
 
+                {/* Porsiyon Seçimi (Paket sınırını belirler: 1, 2, 3, 4 Çeşit) */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[11px] font-bold text-stone-700 block">Porsiyon Paketini Seç:</span>
+                    <span className="text-[10px] text-amber-900 font-bold">{selectedTier.name}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {PRICING_TIERS.slice(0, 4).map(tier => {
+                      const isSel = selectedTier.id === tier.id;
+                      return (
+                        <div
+                          key={tier.id}
+                          onClick={() => handleTierSelect(tier)}
+                          className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
+                            isSel
+                              ? 'border-[#0e3d29] bg-amber-50/70 text-[#0e3d29] font-bold ring-1 ring-[#0e3d29]'
+                              : 'border-stone-200 bg-white text-stone-600'
+                          }`}
+                        >
+                          <span className="block text-[11px]">{tier.itemsCount} Çeşit Menü</span>
+                          <span className="font-serif font-bold text-sm">{tier.dailyPrice} ₺</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Gün Seçici Tablar */}
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs pt-1">
                   {DAYS_MENU.map(d => {
                     const isSel = selectedDayKey === d.id;
                     return (
                       <button
                         key={d.id}
                         onClick={() => setSelectedDayKey(d.id)}
-                        className={`px-3 py-1.5 font-serif rounded-xl transition-colors shrink-0 ${
+                        className={`px-3 py-1.5 font-serif rounded-xl transition-colors shrink-0 cursor-pointer ${
                           isSel
                             ? 'bg-[#0e3d29] text-[#f7e7ce] font-bold shadow-2xs'
                             : 'bg-white text-stone-600 border border-stone-200'
@@ -304,19 +400,15 @@ export default function MobileSimulator({ isOpen, onClose }) {
                       {personalizedPlan[selectedDayKey]?.dayName} Menün
                     </span>
                     <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
-                      ✓ Damak Tadına Uygun
+                      {selectedTier.itemsCount === 2 && '1 Ana Yemek + 1 Yan Lezzet'}
+                      {selectedTier.itemsCount === 1 && 'Sadece Ana Yemek'}
+                      {selectedTier.itemsCount === 3 && '3 Çeşit Lezzet'}
+                      {selectedTier.itemsCount >= 4 && '4 Çeşit Tam Menü'}
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <span className="text-stone-400">🍵</span>
-                      <div>
-                        <span className="text-[10px] text-stone-400 block">Çorba</span>
-                        <span className="font-medium text-stone-800">{personalizedPlan[selectedDayKey]?.corba}</span>
-                      </div>
-                    </div>
-
+                    {/* Ana Yemek (Her zaman var) */}
                     <div className="flex items-start gap-2">
                       <span className="text-stone-400">🥘</span>
                       <div>
@@ -325,50 +417,54 @@ export default function MobileSimulator({ isOpen, onClose }) {
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-2">
-                      <span className="text-stone-400">🍚</span>
-                      <div>
-                        <span className="text-[10px] text-stone-400 block">Pilav / Makarna</span>
-                        <span className="font-medium text-stone-800">{personalizedPlan[selectedDayKey]?.pilav}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="text-stone-400">🥗</span>
-                      <div>
-                        <span className="text-[10px] text-stone-400 block">Salata & Meze</span>
-                        <span className="font-medium text-stone-800">{personalizedPlan[selectedDayKey]?.salata}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Porsiyon Seçimi (Yormayan Mini Seçici) */}
-                <div className="space-y-2 pt-1">
-                  <span className="text-[11px] font-bold text-stone-600 block">Öğünün Kaç Çeşit Olsun?</span>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {PRICING_TIERS.slice(0, 4).map(tier => {
-                      const isSel = selectedTier.id === tier.id;
-                      return (
-                        <div
-                          key={tier.id}
-                          onClick={() => setSelectedTier(tier)}
-                          className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${
-                            isSel
-                              ? 'border-[#0e3d29] bg-amber-50/70 text-[#0e3d29] font-bold'
-                              : 'border-stone-200 bg-white text-stone-600'
-                          }`}
-                        >
-                          <span className="block text-[11px]">{tier.itemsCount} Çeşit Menü</span>
-                          <span className="font-serif font-bold text-sm">{tier.dailyPrice} ₺</span>
+                    {/* Çorba (Varsa) */}
+                    {personalizedPlan[selectedDayKey]?.corba && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-stone-400">🍵</span>
+                        <div>
+                          <span className="text-[10px] text-stone-400 block">Çorba</span>
+                          <span className="font-medium text-stone-800">{personalizedPlan[selectedDayKey]?.corba}</span>
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
+
+                    {/* Pilav (Varsa) */}
+                    {personalizedPlan[selectedDayKey]?.pilav && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-stone-400">🍚</span>
+                        <div>
+                          <span className="text-[10px] text-stone-400 block">Pilav / Makarna</span>
+                          <span className="font-medium text-stone-800">{personalizedPlan[selectedDayKey]?.pilav}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Salata / Meze (Varsa) */}
+                    {personalizedPlan[selectedDayKey]?.salata && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-stone-400">🥗</span>
+                        <div>
+                          <span className="text-[10px] text-stone-400 block">Salata & Meze</span>
+                          <span className="font-medium text-stone-800">{personalizedPlan[selectedDayKey]?.salata}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Günün Menüsünü Düzenleme Butonu */}
+                  <div className="pt-2 border-t border-stone-100 flex justify-end">
+                    <button
+                      onClick={() => setMobileFlow('customize')}
+                      className="text-xs font-bold text-[#0e3d29] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit3 size={13} />
+                      <span>Bu Günün Yemeklerini Değiştir</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Buton: Siparişe / Ödemeye Geç */}
-                <div className="pt-2">
+                {/* Eylem Butonları */}
+                <div className="pt-2 space-y-2">
                   <button
                     onClick={() => setMobileFlow('checkout')}
                     className="w-full py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
@@ -376,9 +472,204 @@ export default function MobileSimulator({ isOpen, onClose }) {
                     <span>Bu Menüyle Başla (Adres & Ödeme)</span>
                     <ArrowRight size={14} className="text-[#e2991e]" />
                   </button>
-                  <span className="block text-[10px] text-stone-400 text-center mt-1">
-                    Günlük kapıda ödeme veya %15 indirimli aylık paket
+                  
+                  <button
+                    onClick={() => setMobileFlow('customize')}
+                    className="w-full py-2.5 bg-white text-stone-700 border border-stone-200 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit3 size={13} />
+                    <span>Tüm Günleri Kendim Özelleştirmek İstiyorum</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ADIM 3.5: MOBİL MENÜ DÜZENLEME (WEB GİBİ VE PAKET KURALINA TAM UYUMLU) */}
+            {mobileFlow === 'customize' && (
+              <div className="space-y-5 text-xs animate-in fade-in duration-300">
+                <div className="border-b border-stone-200 pb-3">
+                  <div className="flex justify-between items-baseline">
+                    <h3 className="font-serif font-bold text-base text-[#0e3d29]">Menüyü Düzenle</h3>
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                      {selectedTier.name} ({selectedTier.itemsCount} Çeşit)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500 mt-1">
+                    {selectedTier.itemsCount === 2 && '⚠️ 2 Çeşit Kuralı: 1 Ana Yemek + Sadece 1 Yan Lezzet (Çorba VEYA Pilav VEYA Meze) seçebilirsiniz.'}
+                    {selectedTier.itemsCount === 1 && '⚠️ 1 Çeşit Kuralı: Sadece 1 Ana Yemek seçebilirsiniz.'}
+                    {selectedTier.itemsCount === 3 && '3 Çeşit Kuralı: 1 Ana Yemek + 2 Yan Lezzet seçebilirsiniz.'}
+                    {selectedTier.itemsCount >= 4 && '4 Çeşit Kuralı: Çorba, Ana Yemek, Pilav ve Mezenizi belirleyebilirsiniz.'}
+                  </p>
+                </div>
+
+                {/* Gün Seçici Tablar */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
+                  {DAYS_MENU.map(d => {
+                    const isSel = selectedDayKey === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => setSelectedDayKey(d.id)}
+                        className={`px-3 py-1.5 font-serif rounded-xl transition-colors shrink-0 cursor-pointer ${
+                          isSel
+                            ? 'bg-[#0e3d29] text-[#f7e7ce] font-bold shadow-2xs'
+                            : 'bg-white text-stone-600 border border-stone-200'
+                        }`}
+                      >
+                        {d.dayName}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 1. Ana Yemek Seçimi (Zorunlu) */}
+                <div className="space-y-1.5">
+                  <span className="font-serif font-bold text-xs text-[#0e3d29] block">
+                    1. Ana Yemek Seçimi (Zorunlu)
                   </span>
+                  <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl bg-white p-2 max-h-44 overflow-y-auto pr-1">
+                    {currentDayData.anaYemekler.map((yemek) => {
+                      const isSel = personalizedPlan[selectedDayKey]?.anaYemek === yemek;
+                      const excluded = isDishExcluded(yemek);
+                      return (
+                        <div
+                          key={yemek}
+                          onClick={() => !excluded && handleItemSelect(selectedDayKey, 'anaYemek', yemek)}
+                          className={`py-2 px-2 flex justify-between items-center rounded-lg transition-colors ${
+                            excluded
+                              ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-50'
+                              : isSel
+                              ? 'bg-amber-50 text-[#0e3d29] font-bold cursor-pointer'
+                              : 'hover:bg-stone-50 text-stone-700 cursor-pointer'
+                          }`}
+                        >
+                          <span>{yemek} {excluded && '(Elendi)'}</span>
+                          {isSel && !excluded && <Check size={14} className="text-[#0e3d29]" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Çorba Seçimi */}
+                {selectedTier.itemsCount >= 2 && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-baseline">
+                      <span className="font-serif font-bold text-xs text-[#0e3d29] block">
+                        2. Çorba {selectedTier.itemsCount === 2 && '(Yan lezzet olarak seçilebilir)'}
+                      </span>
+                      {selectedTier.itemsCount === 2 && personalizedPlan[selectedDayKey]?.corba && (
+                        <span className="text-[10px] text-amber-800 font-bold">✓ Seçildi</span>
+                      )}
+                    </div>
+                    <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl bg-white p-2">
+                      {currentDayData.corbalar.map((corba) => {
+                        const isSel = personalizedPlan[selectedDayKey]?.corba === corba;
+                        const excluded = isDishExcluded(corba);
+                        return (
+                          <div
+                            key={corba}
+                            onClick={() => !excluded && handleItemSelect(selectedDayKey, 'corba', corba)}
+                            className={`py-2 px-2 flex justify-between items-center rounded-lg transition-colors ${
+                              excluded
+                                ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-50'
+                                : isSel
+                                ? 'bg-amber-50 text-[#0e3d29] font-bold cursor-pointer'
+                                : 'hover:bg-stone-50 text-stone-700 cursor-pointer'
+                            }`}
+                          >
+                            <span>{corba}</span>
+                            {isSel && !excluded && <Check size={14} className="text-[#0e3d29]" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Pilav / Makarna Seçimi */}
+                {selectedTier.itemsCount >= 2 && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-baseline">
+                      <span className="font-serif font-bold text-xs text-[#0e3d29] block">
+                        3. Pilav / Makarna {selectedTier.itemsCount === 2 && '(Yan lezzet olarak seçilebilir)'}
+                      </span>
+                      {selectedTier.itemsCount === 2 && personalizedPlan[selectedDayKey]?.pilav && (
+                        <span className="text-[10px] text-amber-800 font-bold">✓ Seçildi</span>
+                      )}
+                    </div>
+                    <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl bg-white p-2">
+                      {currentDayData.pilavMakarna.map((pilav) => {
+                        const isSel = personalizedPlan[selectedDayKey]?.pilav === pilav;
+                        return (
+                          <div
+                            key={pilav}
+                            onClick={() => handleItemSelect(selectedDayKey, 'pilav', pilav)}
+                            className={`py-2 px-2 flex justify-between items-center rounded-lg transition-colors ${
+                              isSel
+                                ? 'bg-amber-50 text-[#0e3d29] font-bold cursor-pointer'
+                                : 'hover:bg-stone-50 text-stone-700 cursor-pointer'
+                            }`}
+                          >
+                            <span>{pilav}</span>
+                            {isSel && <Check size={14} className="text-[#0e3d29]" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Meze / Salata Seçimi */}
+                {selectedTier.itemsCount >= 3 && (
+                  <div className="space-y-1.5">
+                    <span className="font-serif font-bold text-xs text-[#0e3d29] block">
+                      4. Salata & Yoğurtlu Meze
+                    </span>
+                    <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl bg-white p-2 max-h-40 overflow-y-auto pr-1">
+                      {currentDayData.salataMeze.slice(0, 4).map((meze) => {
+                        const isSel = personalizedPlan[selectedDayKey]?.salata === meze;
+                        return (
+                          <div
+                            key={meze}
+                            onClick={() => handleItemSelect(selectedDayKey, 'salata', meze)}
+                            className={`py-2 px-2 flex justify-between items-center rounded-lg transition-colors ${
+                              isSel
+                                ? 'bg-amber-50 text-[#0e3d29] font-bold cursor-pointer'
+                                : 'hover:bg-stone-50 text-stone-700 cursor-pointer'
+                            }`}
+                          >
+                            <span>{meze}</span>
+                            {isSel && <Check size={14} className="text-[#0e3d29]" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Seçilen Tabak Önizleme */}
+                <div className="p-3 bg-[#0e3d29] text-white rounded-2xl space-y-1">
+                  <span className="text-[10px] text-amber-200 font-bold block uppercase tracking-wider">
+                    {currentDayData.dayName} Tabağın ({selectedTier.itemsCount} Çeşit):
+                  </span>
+                  <div className="font-bold text-xs">
+                    {[
+                      personalizedPlan[selectedDayKey]?.anaYemek,
+                      personalizedPlan[selectedDayKey]?.corba,
+                      personalizedPlan[selectedDayKey]?.pilav,
+                      personalizedPlan[selectedDayKey]?.salata
+                    ].filter(Boolean).join(' • ')}
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setMobileFlow('plan-preview')}
+                    className="w-full py-3.5 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-full text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <span>✓ Değişiklikleri Kaydet & Devam Et</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -523,7 +814,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
               </form>
             )}
 
-            {/* ADIM 5: ONLAY EKRANI */}
+            {/* ADIM 5: ONAY EKRANI */}
             {mobileFlow === 'success' && (
               <div className="p-4 text-center space-y-4 animate-in zoom-in-95 duration-200">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto text-2xl">
@@ -565,7 +856,14 @@ export default function MobileSimulator({ isOpen, onClose }) {
                 <p className="text-xs text-stone-500">Tahmini Teslimat: 12:15 - 12:30</p>
                 <div className="text-left text-xs text-stone-700 border-t border-b border-stone-200 py-3 space-y-1 bg-white p-3 rounded-xl">
                   <div className="font-serif font-bold text-stone-900">Pazartesi Menün:</div>
-                  <div>{personalizedPlan.pazartesi.corba} • {personalizedPlan.pazartesi.anaYemek} • {personalizedPlan.pazartesi.pilav}</div>
+                  <div>
+                    {[
+                      personalizedPlan.pazartesi.anaYemek,
+                      personalizedPlan.pazartesi.corba,
+                      personalizedPlan.pazartesi.pilav,
+                      personalizedPlan.pazartesi.salata
+                    ].filter(Boolean).join(' • ')}
+                  </div>
                   <div className="text-[11px] text-amber-800 font-semibold pt-1">
                     Ödeme: {paymentMethod === 'cod-daily' ? 'Kapıda Ödeme' : 'Online Kartla Ödendi'}
                   </div>
@@ -585,7 +883,9 @@ export default function MobileSimulator({ isOpen, onClose }) {
                       <div>
                         <span className="font-serif font-bold text-stone-900 block">{d.dayName}</span>
                         <span className="text-[11px] text-[#0e3d29] font-medium">{personalizedPlan[d.id]?.anaYemek}</span>
-                        <span className="text-[10px] text-stone-400 block">{personalizedPlan[d.id]?.corba} • {personalizedPlan[d.id]?.pilav}</span>
+                        <span className="text-[10px] text-stone-400 block">
+                          {[personalizedPlan[d.id]?.corba, personalizedPlan[d.id]?.pilav, personalizedPlan[d.id]?.salata].filter(Boolean).join(' • ')}
+                        </span>
                       </div>
                       <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
                         Planlandı
@@ -634,7 +934,7 @@ export default function MobileSimulator({ isOpen, onClose }) {
                 setMobileFlow('plan-preview');
                 setActiveTab('home');
               }}
-              className={`flex flex-col items-center gap-0.5 cursor-pointer ${mobileFlow === 'plan-preview' ? 'text-[#0e3d29] font-bold' : 'text-stone-400'}`}
+              className={`flex flex-col items-center gap-0.5 cursor-pointer ${mobileFlow === 'plan-preview' || mobileFlow === 'customize' ? 'text-[#0e3d29] font-bold' : 'text-stone-400'}`}
             >
               <Utensils size={17} />
               <span className="text-[10px]">Menüm</span>
