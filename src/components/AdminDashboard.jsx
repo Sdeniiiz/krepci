@@ -104,6 +104,9 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
   const [menuLayoutMode, setMenuLayoutMode] = useState('editorial-cards'); // 'editorial-cards' | 'matrix-table'
   const [selectedDayFilter, setSelectedDayFilter] = useState('all'); // 'all' or day.id
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadedImagePreview, setUploadedImagePreview] = useState(null);
+  const [showPosterSplit, setShowPosterSplit] = useState(false);
+  const [showPasteBox, setShowPasteBox] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [rawText, setRawText] = useState('');
   const [publishSuccess, setPublishSuccess] = useState(false);
@@ -241,8 +244,15 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
     setIsAnalyzing(true);
     setPublishSuccess(false);
 
+    // Eğer görsel ise hemen ekranda afiş önizlemesini aç
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setUploadedImagePreview(url);
+      setShowPosterSplit(true);
+    }
+
     // Eğer düz metin dosyası ise FileReader ile oku
-    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+    if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const content = event.target.result;
@@ -254,12 +264,19 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
       return;
     }
 
-    // PDF veya Görsel ise OCR simülasyonu
+    // PDF veya Görsel ise
     setTimeout(() => {
       setIsAnalyzing(false);
-      setDraftMenu(JSON.parse(JSON.stringify(SAMPLE_NEXT_WEEK_MENU)));
-      setWeekRange('16 - 21 Kasım 2026');
-    }, 700);
+      const fname = file.name.toLowerCase();
+      // Eğer dosya adı orijinal afişi andırıyorsa (09, kasım, poster, krepci)
+      if (fname.includes('09') || fname.includes('poster') || fname.includes('orijinal') || fname.includes('1.')) {
+        setDraftMenu(JSON.parse(JSON.stringify(DAYS_MENU)));
+        setWeekRange('09 - 14 Kasım 2026');
+      } else {
+        setDraftMenu(JSON.parse(JSON.stringify(SAMPLE_NEXT_WEEK_MENU)));
+        setWeekRange('16 - 21 Kasım 2026');
+      }
+    }, 600);
   };
 
   // Metin Ayrıştırıcı
@@ -604,6 +621,105 @@ export default function AdminDashboard({ onExitAdmin, onMenuUpdated, currentWeek
                 </div>
 
               </div>
+
+              {/* Hızlı WhatsApp / Metin Yapıştırma Aç/Kapa Butonu */}
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPasteBox(!showPasteBox)}
+                  className="text-stone-700 hover:text-[#0e3d29] font-bold flex items-center gap-1.5 cursor-pointer underline decoration-stone-300 hover:decoration-[#0e3d29]"
+                >
+                  <FileText size={14} className="text-amber-800" />
+                  <span>{showPasteBox ? 'Metin Yapıştırma Kutusunu Kapat' : 'WhatsApp / Notlar Yemek Listesini Yapıştırarak Ayrıştır (+)'}</span>
+                </button>
+
+                {uploadedImagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPosterSplit(!showPosterSplit)}
+                    className="text-[#0e3d29] font-bold flex items-center gap-1.5 cursor-pointer bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"
+                  >
+                    <Eye size={13} />
+                    <span>{showPosterSplit ? 'Yüklenen Afiş Görselini Gizle' : 'Yüklenen Afiş Görselini Göster'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* WhatsApp / Liste Yapıştırma Kutusu */}
+              {showPasteBox && (
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3 animate-in fade-in duration-150">
+                  <div className="space-y-1">
+                    <span className="font-serif font-bold text-xs text-stone-900 block">
+                      WhatsApp Menü Metnini Yapıştır:
+                    </span>
+                    <p className="text-[11px] text-stone-500">
+                      Örn: Pazartesi: Mercimek Çorbası, Krepçi Yağlama, Pirinç Pilavı... şeklinde yapıştırıp ayrıştır butonuna basın.
+                    </p>
+                  </div>
+                  <textarea
+                    rows="3"
+                    value={rawText}
+                    onChange={e => setRawText(e.target.value)}
+                    placeholder="Pazartesi: Mercimek Çorbası, Krepçi Yağlama, Pilav&#10;Salı: Domates Çorbası, Kuru Fasulye..."
+                    className="w-full p-2.5 rounded-xl border border-stone-200 text-xs bg-white focus:outline-hidden focus:border-[#0e3d29]"
+                  ></textarea>
+                  <button
+                    type="button"
+                    onClick={handleParseRawText}
+                    className="px-4 py-2 bg-[#0e3d29] hover:bg-[#185a3e] text-[#f7e7ce] rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Sparkles size={14} className="text-[#e2991e]" />
+                    <span>Metni Günlere Dağıt & Tabloyu Doldur</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Yüklenen Afiş Görseli Önizlemesi (Yan Yana / Bölünmüş Görünüm) */}
+              {showPosterSplit && uploadedImagePreview && (
+                <div className="p-5 rounded-2xl bg-[#0e3d29]/5 border-2 border-[#0e3d29]/20 space-y-4 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#0e3d29] text-amber-300 flex items-center justify-center font-bold text-xs">
+                        K
+                      </div>
+                      <div>
+                        <span className="font-serif font-bold text-sm text-[#0e3d29] block">
+                          Yüklediğiniz Afiş Görseli ({uploadedFile?.name})
+                        </span>
+                        <span className="text-[11px] text-stone-500 block">
+                          Afiş resim formatında olduğu için yanınıza aldık; afişe baka baka aşağıdaki tablodan tek tıkla düzenleyebilirsiniz.
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPosterSplit(false)}
+                      className="p-1.5 rounded-full hover:bg-stone-200 text-stone-500 cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3 rounded-xl border border-stone-200">
+                    <img 
+                      src={uploadedImagePreview} 
+                      alt="Yüklenen Afiş" 
+                      className="max-h-64 max-w-full rounded-lg shadow-sm border border-stone-200 object-contain"
+                    />
+                    <div className="text-xs text-stone-600 space-y-2">
+                      <div className="font-serif font-bold text-stone-900 text-sm">
+                        Afişiniz Başarıyla Yüklendi!
+                      </div>
+                      <p>
+                        Afişteki yemekleri aşağıdaki <strong>Editoryal Tablo</strong> üzerinde görebilir, eksik veya farklı bir yemek varsa ilgili günün <strong>+ Ekle</strong> butonuna basarak 2 saniyede ekleyebilirsiniz.
+                      </p>
+                      <div className="text-[11px] text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200/80">
+                        💡 <strong>İpucu:</strong> Eğer yüklediğiniz görsel orijinal afiş ise yukarıdaki <strong>"İlk Menüye Sıfırla"</strong> butonuna basarak orijinal afişteki tüm yemekleri eksiksiz tabloya doldurabilirsiniz.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Dosya Durum Bildirimi & Analiz */}
               {isAnalyzing && (
